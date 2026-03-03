@@ -23,6 +23,11 @@ repositories {
         name = "placeholderapi"
         url = uri("https://repo.extendedclip.com/releases/")
     }
+
+    maven {
+        name = "jitpack"
+        url = uri("https://jitpack.io")
+    }
 }
 
 dependencies {
@@ -30,6 +35,7 @@ dependencies {
     compileOnly("me.clip:placeholderapi:2.11.7")
     compileOnly("net.kyori:adventure-text-minimessage:4.17.0")
     compileOnly("net.kyori:adventure-text-serializer-legacy:4.17.0")
+    compileOnly("com.github.LoneDev6:API-ItemsAdder:3.6.1")
 
     implementation("org.xerial:sqlite-jdbc:3.44.1.0")
 }
@@ -39,7 +45,7 @@ java {
 }
 
 application {
-    mainClass = "easytpa.EasyTPA"
+    mainClass = "dev.indrajeeth.papertpa.PaperTpa"
 }
 
 val pluginVersion: String = file("src/main/resources/plugin.yml")
@@ -49,7 +55,7 @@ val pluginVersion: String = file("src/main/resources/plugin.yml")
     ?.trim() ?: "1.0.0"
 
 tasks.shadowJar {
-  archiveBaseName.set("EasyTPA")
+  archiveBaseName.set("PaperTpa")
   archiveClassifier.set("")
   archiveVersion.set(pluginVersion)
 

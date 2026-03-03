@@ -1,6 +1,6 @@
-package me.maybeizen.EasyTPA.manager;
+package dev.indrajeeth.papertpa.manager;
 
-import me.maybeizen.EasyTPA.EasyTPA;
+import dev.indrajeeth.papertpa.PaperTpa;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -11,7 +11,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TeleportRequestManager {
-    private final EasyTPA plugin;
+    private final PaperTpa plugin;
     private final DatabaseManager database;
     
     // active requests: requester > target
@@ -21,7 +21,7 @@ public class TeleportRequestManager {
     // cooldowns: player > last request time
     private final Map<UUID, Long> cooldowns = new ConcurrentHashMap<>();
 
-    public TeleportRequestManager(EasyTPA plugin, DatabaseManager database) {
+    public TeleportRequestManager(PaperTpa plugin, DatabaseManager database) {
         this.plugin = plugin;
         this.database = database;
     }
@@ -34,7 +34,7 @@ public class TeleportRequestManager {
             return CompletableFuture.completedFuture(RequestResult.ALREADY_HAS_REQUEST);
         }
 
-        if (!requester.hasPermission("easytpa.cooldown.bypass")) {
+        if (!requester.hasPermission("papertpa.cooldown.bypass")) {
             long lastRequest = cooldowns.getOrDefault(requesterId, 0L);
             long cooldownMs = plugin.getConfigManager().getCooldown() * 1000L;
             if (System.currentTimeMillis() - lastRequest < cooldownMs) {
@@ -43,7 +43,7 @@ public class TeleportRequestManager {
         }
 
         return database.areRequestsEnabled(targetId).thenCompose(enabled -> {
-            if (!enabled && !requester.hasPermission("easytpa.bypass")) {
+            if (!enabled && !requester.hasPermission("papertpa.bypass")) {
                 return CompletableFuture.completedFuture(RequestResult.REQUESTS_DISABLED);
             }
 
@@ -143,14 +143,14 @@ public class TeleportRequestManager {
         }
 
         int delay = plugin.getConfigManager().getTeleportDelay();
-        if (delay > 0 && !player.hasPermission("easytpa.delay.bypass")) {
+        if (delay > 0 && !player.hasPermission("papertpa.delay.bypass")) {
             Location startLocation = player.getLocation().clone();
             PendingTeleport pending = new PendingTeleport(player, destination, startLocation, delay);
             pendingTeleports.put(playerId, pending);
             
             java.util.Map<String, String> placeholders = new java.util.HashMap<>();
             placeholders.put("time", String.valueOf(delay));
-            me.maybeizen.EasyTPA.util.MessageUtil.sendMessageWithPlaceholders(
+            dev.indrajeeth.papertpa.util.MessageUtil.sendMessageWithPlaceholders(
                 player,
                 plugin.getConfigManager().getPrefix() + 
                 plugin.getConfigManager().getMessage("teleport.starting", placeholders)
@@ -274,8 +274,8 @@ public class TeleportRequestManager {
             if (current.getWorld() != startLocation.getWorld() ||
                 current.distance(startLocation) > 0.5) {
                 cancel();
-                EasyTPA plugin = EasyTPA.getInstance();
-                me.maybeizen.EasyTPA.util.MessageUtil.sendMessageWithPlaceholders(
+                PaperTpa plugin = PaperTpa.getInstance();
+                dev.indrajeeth.papertpa.util.MessageUtil.sendMessageWithPlaceholders(
                     player, 
                     plugin.getConfigManager().getPrefix() + 
                     plugin.getConfigManager().getMessage("teleport.cancelled-moved")
@@ -283,11 +283,11 @@ public class TeleportRequestManager {
                 return;
             }
 
-            EasyTPA plugin = EasyTPA.getInstance();
+            PaperTpa plugin = PaperTpa.getInstance();
             if (remainingSeconds > 0) {
                 java.util.Map<String, String> placeholders = new java.util.HashMap<>();
                 placeholders.put("time", String.valueOf(remainingSeconds));
-                me.maybeizen.EasyTPA.util.MessageUtil.sendMessageWithPlaceholders(
+                dev.indrajeeth.papertpa.util.MessageUtil.sendMessageWithPlaceholders(
                     player,
                     plugin.getConfigManager().getPrefix() + 
                     plugin.getConfigManager().getMessage("teleport.countdown", placeholders)
@@ -304,7 +304,7 @@ public class TeleportRequestManager {
             if (task != null) {
                 task.cancel();
             }
-            TeleportRequestManager manager = EasyTPA.getInstance().getTeleportManager();
+            TeleportRequestManager manager = PaperTpa.getInstance().getTeleportManager();
             manager.removePendingTeleport(player.getUniqueId());
             manager.performTeleportDirect(player, destination);
         }
@@ -313,10 +313,10 @@ public class TeleportRequestManager {
             if (task != null) {
                 task.cancel();
             }
-            EasyTPA.getInstance().getTeleportManager().removePendingTeleport(player.getUniqueId());
+            PaperTpa.getInstance().getTeleportManager().removePendingTeleport(player.getUniqueId());
             if (player.isOnline()) {
-                EasyTPA plugin = EasyTPA.getInstance();
-                me.maybeizen.EasyTPA.util.MessageUtil.sendMessageWithPlaceholders(
+                PaperTpa plugin = PaperTpa.getInstance();
+                dev.indrajeeth.papertpa.util.MessageUtil.sendMessageWithPlaceholders(
                     player,
                     plugin.getConfigManager().getPrefix() + 
                     plugin.getConfigManager().getMessage("teleport.cancelled")

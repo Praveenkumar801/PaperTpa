@@ -1,8 +1,8 @@
-package me.maybeizen.EasyTPA.command;
+package dev.indrajeeth.papertpa.command;
 
 import com.mojang.brigadier.CommandDispatcher;
-import me.maybeizen.EasyTPA.EasyTPA;
-import me.maybeizen.EasyTPA.util.MessageUtil;
+import dev.indrajeeth.papertpa.PaperTpa;
+import dev.indrajeeth.papertpa.util.MessageUtil;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 public class TPACommand extends SimpleCommandHandler {
-    public TPACommand(EasyTPA plugin) {
+    public TPACommand(PaperTpa plugin) {
         super(plugin);
     }
 

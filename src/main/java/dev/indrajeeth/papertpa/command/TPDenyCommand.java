@@ -1,8 +1,8 @@
-package me.maybeizen.EasyTPA.command;
+package dev.indrajeeth.papertpa.command;
 
 import com.mojang.brigadier.CommandDispatcher;
-import me.maybeizen.EasyTPA.EasyTPA;
-import me.maybeizen.EasyTPA.util.MessageUtil;
+import dev.indrajeeth.papertpa.PaperTpa;
+import dev.indrajeeth.papertpa.util.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -13,8 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public class TPAcceptCommand extends SimpleCommandHandler {
-    public TPAcceptCommand(EasyTPA plugin) {
+public class TPDenyCommand extends SimpleCommandHandler {
+    public TPDenyCommand(PaperTpa plugin) {
         super(plugin);
     }
 
@@ -33,7 +33,7 @@ public class TPAcceptCommand extends SimpleCommandHandler {
                 MessageUtil.sendMessageWithPlaceholders(player, configManager.getPrefix() + configManager.getMessage("requests.no-pending-requests"));
                 return true;
             }
-            acceptRequest(player, pending.get(0));
+            denyRequest(player, pending.get(0));
         } else {
             String targetName = args[0];
             Player requester = Bukkit.getPlayer(targetName);
@@ -41,7 +41,7 @@ public class TPAcceptCommand extends SimpleCommandHandler {
                 MessageUtil.sendMessageWithPlaceholders(player, configManager.getPrefix() + configManager.getMessage("general.player-not-found"));
                 return true;
             }
-            acceptRequest(player, requester.getUniqueId());
+            denyRequest(player, requester.getUniqueId());
         }
         
         return true;
@@ -64,24 +64,19 @@ public class TPAcceptCommand extends SimpleCommandHandler {
         return null;
     }
 
-    private void acceptRequest(Player accepter, UUID requesterId) {
-        requestManager.acceptRequest(accepter, requesterId).thenAccept(result -> {
+    private void denyRequest(Player denier, UUID requesterId) {
+        requestManager.denyRequest(denier, requesterId).thenAccept(result -> {
             Bukkit.getScheduler().runTask(plugin, () -> {
                 Player requester = Bukkit.getPlayer(requesterId);
                 if (result && requester != null && requester.isOnline()) {
                     Map<String, String> placeholders = new HashMap<>();
-                    placeholders.put("player", accepter.getName());
-                    MessageUtil.sendMessageWithPlaceholders(requester, configManager.getPrefix() + configManager.getMessage("requests.accepted", placeholders));
+                    placeholders.put("player", denier.getName());
+                    MessageUtil.sendMessageWithPlaceholders(requester, configManager.getPrefix() + configManager.getMessage("requests.denied", placeholders));
 
                     placeholders.put("player", requester.getName());
-                    MessageUtil.sendMessageWithPlaceholders(accepter, configManager.getPrefix() + configManager.getMessage("requests.accepted-target", placeholders));
-
-                    if (configManager.areSoundsEnabled()) {
-                        accepter.playSound(accepter.getLocation(), org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
-                        requester.playSound(requester.getLocation(), org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
-                    }
+                    MessageUtil.sendMessageWithPlaceholders(denier, configManager.getPrefix() + configManager.getMessage("requests.denied-target", placeholders));
                 } else {
-                    MessageUtil.sendMessageWithPlaceholders(accepter, configManager.getPrefix() + configManager.getMessage("requests.no-pending-request"));
+                    MessageUtil.sendMessageWithPlaceholders(denier, configManager.getPrefix() + configManager.getMessage("requests.no-pending-request"));
                 }
             });
         });

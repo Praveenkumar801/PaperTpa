@@ -1,84 +1,84 @@
-name: EasyTPA
+name: PaperTpa
 version: v2.0.0-Alpha+1
-main: me.maybeizen.EasyTPA.EasyTPA
+main: dev.indrajeeth.papertpa.PaperTpa
 api-version: 1.21
 description: Simple, powerful teleport requests for Minecraft servers
-authors: ["maybeizen", "Membercat Studios"]
-website: https://membercat.com
+authors: ["IndrajeethY"]
+website: https://github.com/Praveenkumar801/PaperTpa
 depend: []
-softdepend: [PlaceholderAPI]
+softdepend: [PlaceholderAPI, ItemsAdder]
 
 commands:
   tpa:
     description: Send a teleport request to a player
     usage: /tpa <player>
-    permission: easytpa.tpa
+    permission: papertpa.tpa
     permission-message: "You don't have permission to use this command."
   tpaccept:
     description: Accept a teleport request
     usage: /tpaccept [player]
-    permission: easytpa.tpaccept
+    permission: papertpa.tpaccept
     permission-message: "You don't have permission to use this command."
   tpdeny:
     description: Deny a teleport request
     usage: /tpdeny [player]
-    permission: easytpa.tpdeny
+    permission: papertpa.tpdeny
     permission-message: "You don't have permission to use this command."
   tptoggle:
     description: Toggle teleport requests on/off
     usage: /tptoggle
-    permission: easytpa.toggle
+    permission: papertpa.toggle
     permission-message: "You don't have permission to use this command."
   tpcancel:
     description: Cancel your pending request or teleport
     usage: /tpcancel
-    permission: easytpa.tpa
+    permission: papertpa.tpa
     permission-message: "You don't have permission to use this command."
   tplist:
     description: List all your pending teleport requests
     usage: /tplist
-    permission: easytpa.tpa
+    permission: papertpa.tpa
     permission-message: "You don't have permission to use this command."
-  easytpa:
-    description: EasyTPA admin commands
-    usage: /easytpa reload
-    permission: easytpa.admin
+  papertpa:
+    description: PaperTpa admin commands
+    usage: /papertpa reload
+    permission: papertpa.admin
     permission-message: "You don't have permission to use this command."
 
 permissions:
-  easytpa.tpa:
+  papertpa.tpa:
     description: Send teleport requests
     default: true
-  easytpa.tpaccept:
+  papertpa.tpaccept:
     description: Accept teleport requests
     default: true
-  easytpa.tpdeny:
+  papertpa.tpdeny:
     description: Deny teleport requests
     default: true
-  easytpa.toggle:
+  papertpa.toggle:
     description: Toggle teleport requests
     default: true
-  easytpa.admin:
+  papertpa.admin:
     description: Access admin commands
     default: op
-  easytpa.bypass:
+  papertpa.bypass:
     description: Bypass disabled teleport requests
     default: op
-  easytpa.cooldown.bypass:
+  papertpa.cooldown.bypass:
     description: Bypass cooldown timers
     default: op
-  easytpa.delay.bypass:
+  papertpa.delay.bypass:
     description: Bypass teleport delay
     default: op
-  easytpa.*:
-    description: All EasyTPA permissions
+  papertpa.*:
+    description: All PaperTpa permissions
     default: op
     children:
-      easytpa.tpa: true
-      easytpa.tpaccept: true
-      easytpa.tpdeny: true
-      easytpa.toggle: true
-      easytpa.admin: true
-      easytpa.bypass: true
-      easytpa.cooldown.bypass: true
-      easytpa.delay.bypass: true
+      papertpa.tpa: true
+      papertpa.tpaccept: true
+      papertpa.tpdeny: true
+      papertpa.toggle: true
+      papertpa.admin: true
+      papertpa.bypass: true
+      papertpa.cooldown.bypass: true
+      papertpa.delay.bypass: true

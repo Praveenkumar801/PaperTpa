@@ -1,8 +1,8 @@
-package me.maybeizen.EasyTPA.command;
+package dev.indrajeeth.papertpa.command;
 
-import me.maybeizen.EasyTPA.EasyTPA;
-import me.maybeizen.EasyTPA.manager.ConfigManager;
-import me.maybeizen.EasyTPA.manager.TeleportRequestManager;
+import dev.indrajeeth.papertpa.PaperTpa;
+import dev.indrajeeth.papertpa.manager.ConfigManager;
+import dev.indrajeeth.papertpa.manager.TeleportRequestManager;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -14,11 +14,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SimpleCommandHandler implements CommandExecutor, TabCompleter {
-    protected final EasyTPA plugin;
+    protected final PaperTpa plugin;
     protected final TeleportRequestManager requestManager;
     protected final ConfigManager configManager;
 
-    public SimpleCommandHandler(EasyTPA plugin) {
+    public SimpleCommandHandler(PaperTpa plugin) {
         this.plugin = plugin;
         this.requestManager = plugin.getTeleportManager();
         this.configManager = plugin.getConfigManager();

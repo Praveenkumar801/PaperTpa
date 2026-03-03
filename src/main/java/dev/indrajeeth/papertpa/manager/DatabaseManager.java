@@ -1,6 +1,6 @@
-package me.maybeizen.EasyTPA.manager;
+package dev.indrajeeth.papertpa.manager;
 
-import me.maybeizen.EasyTPA.EasyTPA;
+import dev.indrajeeth.papertpa.PaperTpa;
 
 import java.io.File;
 import java.sql.*;
@@ -9,13 +9,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
 public class DatabaseManager {
-    private final EasyTPA plugin;
+    private final PaperTpa plugin;
     private Connection connection;
     private final File databaseFile;
 
-    public DatabaseManager(EasyTPA plugin) {
+    public DatabaseManager(PaperTpa plugin) {
         this.plugin = plugin;
-        this.databaseFile = new File(plugin.getDataFolder(), "easytpa.db");
+        this.databaseFile = new File(plugin.getDataFolder(), "papertpa.db");
     }
 
     public void initialize() {

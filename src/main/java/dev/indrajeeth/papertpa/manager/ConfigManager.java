@@ -1,6 +1,7 @@
-package me.maybeizen.EasyTPA.manager;
+package dev.indrajeeth.papertpa.manager;
 
-import me.maybeizen.EasyTPA.EasyTPA;
+import dev.indrajeeth.papertpa.PaperTpa;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -12,13 +13,13 @@ import java.util.Map;
 import java.util.logging.Level;
 
 public class ConfigManager {
-    private final EasyTPA plugin;
+    private final PaperTpa plugin;
     private FileConfiguration config;
     private FileConfiguration messages;
     private File configFile;
     private File messagesFile;
 
-    public ConfigManager(EasyTPA plugin) {
+    public ConfigManager(PaperTpa plugin) {
         this.plugin = plugin;
     }
 
@@ -70,11 +71,27 @@ public class ConfigManager {
     }
 
     public int getCooldown() {
-        return config.getInt("settings.cooldown", 30);
+        return config.getInt("settings.cooldown", 10);
     }
 
     public int getTeleportDelay() {
-        return config.getInt("settings.teleport-delay", 3);
+        return config.getInt("settings.teleport-delay", 5);
+    }
+
+    public int getRatingDelay() {
+        return config.getInt("settings.rating-delay", 30);
+    }
+
+    public int getTrapWindow() {
+        return config.getInt("settings.trap-window", 20);
+    }
+
+    public boolean isTpBackOnTrap() {
+        return config.getBoolean("settings.tpback-on-trap", true);
+    }
+
+    public int getMinRatingsForLeaderboard() {
+        return config.getInt("settings.min-ratings-for-leaderboard", 5);
     }
 
     public boolean areSoundsEnabled() {
@@ -83,6 +100,15 @@ public class ConfigManager {
 
     public boolean captureLocationOnAccept() {
         return config.getBoolean("settings.capture-location-on-accept", true);
+    }
+
+    /**
+     * Returns the ConfigurationSection for a GUI item path, e.g.
+     * {@code "gui.request.accept-item"}.
+     * Returns {@code null} when the path doesn't exist.
+     */
+    public ConfigurationSection getGuiSection(String path) {
+        return config.getConfigurationSection(path);
     }
 
     public String getMessage(String path) {

@@ -1,20 +1,20 @@
-package me.maybeizen.EasyTPA.manager;
+package dev.indrajeeth.papertpa.manager;
 
-import me.maybeizen.EasyTPA.EasyTPA;
-import me.maybeizen.EasyTPA.command.*;
+import dev.indrajeeth.papertpa.PaperTpa;
+import dev.indrajeeth.papertpa.command.*;
 import org.bukkit.command.PluginCommand;
 
 public class CommandManager {
-    private final EasyTPA plugin;
+    private final PaperTpa plugin;
     private final TPACommand tpaCommand;
     private final TPAcceptCommand tpAcceptCommand;
     private final TPDenyCommand tpDenyCommand;
     private final TPCancelCommand tpCancelCommand;
     private final TPListCommand tpListCommand;
     private final TPToggleCommand tpToggleCommand;
-    private final EasyTPACommand easyTPACommand;
+    private final PaperTpaAdminCommand adminCommand;
 
-    public CommandManager(EasyTPA plugin) {
+    public CommandManager(PaperTpa plugin) {
         this.plugin = plugin;
         this.tpaCommand = new TPACommand(plugin);
         this.tpAcceptCommand = new TPAcceptCommand(plugin);
@@ -22,7 +22,7 @@ public class CommandManager {
         this.tpCancelCommand = new TPCancelCommand(plugin);
         this.tpListCommand = new TPListCommand(plugin);
         this.tpToggleCommand = new TPToggleCommand(plugin);
-        this.easyTPACommand = new EasyTPACommand(plugin);
+        this.adminCommand = new PaperTpaAdminCommand(plugin);
     }
 
     public void registerCommands() {
@@ -32,7 +32,7 @@ public class CommandManager {
         registerCommand("tpcancel", tpCancelCommand);
         registerCommand("tplist", tpListCommand);
         registerCommand("tptoggle", tpToggleCommand);
-        registerCommand("easytpa", easyTPACommand);
+        registerCommand("papertpa", adminCommand);
         
         plugin.getLogger().info("Registered all commands");
     }

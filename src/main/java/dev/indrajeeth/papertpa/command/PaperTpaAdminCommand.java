@@ -1,13 +1,13 @@
-package me.maybeizen.EasyTPA.command;
+package dev.indrajeeth.papertpa.command;
 
 import com.mojang.brigadier.CommandDispatcher;
-import me.maybeizen.EasyTPA.EasyTPA;
-import me.maybeizen.EasyTPA.util.MessageUtil;
+import dev.indrajeeth.papertpa.PaperTpa;
+import dev.indrajeeth.papertpa.util.MessageUtil;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
-public class EasyTPACommand extends SimpleCommandHandler {
-    public EasyTPACommand(EasyTPA plugin) {
+public class PaperTpaAdminCommand extends SimpleCommandHandler {
+    public PaperTpaAdminCommand(PaperTpa plugin) {
         super(plugin);
     }
 
