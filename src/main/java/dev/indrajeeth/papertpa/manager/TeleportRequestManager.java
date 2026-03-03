@@ -1,7 +1,14 @@
 package dev.indrajeeth.papertpa.manager;
 
 import dev.indrajeeth.papertpa.PaperTpa;
+import dev.indrajeeth.papertpa.model.RatingSession;
+import dev.indrajeeth.papertpa.model.TPARequest;
+import dev.indrajeeth.papertpa.util.MessageUtil;
 import dev.indrajeeth.papertpa.util.SoundUtil;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -12,33 +19,49 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TeleportRequestManager {
+
     private final PaperTpa plugin;
     private final DatabaseManager database;
-    
-    // active requests: requester > target
-    private final Map<UUID, UUID> activeRequests = new ConcurrentHashMap<>();
-    // pending teleports: player > teleport info
+
+    // active requests:  requesterId → TPARequest
+    private final Map<UUID, TPARequest> activeRequests = new ConcurrentHashMap<>();
+    // pending warmup teleports: playerId → task wrapper
     private final Map<UUID, PendingTeleport> pendingTeleports = new ConcurrentHashMap<>();
-    // cooldowns: player > last request time
+    // cooldowns: requesterId → last-request timestamp
     private final Map<UUID, Long> cooldowns = new ConcurrentHashMap<>();
+    // after accepted: requesterUUID → targetUUID (cleared after rating scheduled)
+    private final Map<UUID, UUID> requesterToTarget = new ConcurrentHashMap<>();
 
     public TeleportRequestManager(PaperTpa plugin, DatabaseManager database) {
-        this.plugin = plugin;
+        this.plugin   = plugin;
         this.database = database;
     }
 
+    // ──────────────────────────────────────────────────────────────────────────
+    // Send request
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Must be called on the main thread so that {@link Player#getLocation()} is safe.
+     */
     public CompletableFuture<RequestResult> sendRequest(Player requester, Player target) {
         UUID requesterId = requester.getUniqueId();
-        UUID targetId = target.getUniqueId();
+        UUID targetId    = target.getUniqueId();
 
-        if (activeRequests.containsKey(requesterId) && activeRequests.get(requesterId).equals(targetId)) {
+        // Capture location on main thread before any async work
+        Location requesterLoc = requester.getLocation().clone();
+
+        // Duplicate-request guard
+        TPARequest existing = activeRequests.get(requesterId);
+        if (existing != null && existing.getTargetId().equals(targetId)) {
             return CompletableFuture.completedFuture(RequestResult.ALREADY_HAS_REQUEST);
         }
 
+        // Cooldown check
         if (!requester.hasPermission("papertpa.cooldown.bypass")) {
-            long lastRequest = cooldowns.getOrDefault(requesterId, 0L);
+            long last = cooldowns.getOrDefault(requesterId, 0L);
             long cooldownMs = plugin.getConfigManager().getCooldown() * 1000L;
-            if (System.currentTimeMillis() - lastRequest < cooldownMs) {
+            if (System.currentTimeMillis() - last < cooldownMs) {
                 return CompletableFuture.completedFuture(RequestResult.ON_COOLDOWN);
             }
         }
@@ -48,209 +71,324 @@ public class TeleportRequestManager {
                 return CompletableFuture.completedFuture(RequestResult.REQUESTS_DISABLED);
             }
 
-            long requestTime = System.currentTimeMillis();
-            activeRequests.put(requesterId, targetId);
-            cooldowns.put(requesterId, requestTime);
-            
-            database.updateLastRequestTime(requesterId, requestTime);
-            
-            return CompletableFuture.completedFuture(RequestResult.SUCCESS);
+            long now = System.currentTimeMillis();
+            TPARequest request = new TPARequest(requesterId, targetId, now, requesterLoc);
+            activeRequests.put(requesterId, request);
+            cooldowns.put(requesterId, now);
+            database.updateLastRequestTime(requesterId, now);
+            database.incrementStat(requesterId, "total_sent");
+            database.incrementStat(targetId,    "total_received");
+
+            // Check auto-accept preference
+            return database.isAutoAcceptEnabled(targetId)
+                .thenApply(autoAccept -> autoAccept ? RequestResult.AUTO_ACCEPTED : RequestResult.SUCCESS);
         });
     }
 
     public enum RequestResult {
         SUCCESS,
+        AUTO_ACCEPTED,
         ALREADY_HAS_REQUEST,
         ON_COOLDOWN,
         REQUESTS_DISABLED
     }
 
+    // ──────────────────────────────────────────────────────────────────────────
+    // Accept / Deny / Cancel
+    // ──────────────────────────────────────────────────────────────────────────
+
     public CompletableFuture<Boolean> acceptRequest(Player accepter, UUID requesterId) {
         UUID accepterId = accepter.getUniqueId();
-        
-        if (!activeRequests.containsKey(requesterId) || !activeRequests.get(requesterId).equals(accepterId)) {
+        TPARequest request = activeRequests.get(requesterId);
+        if (request == null || !request.getTargetId().equals(accepterId)) {
+            return CompletableFuture.completedFuture(false);
+        }
+
+        // ── FIX: atomic compare-and-remove prevents double-accept race condition ──
+        // If two threads (e.g. /tpaccept + GUI click) both pass the check above,
+        // only the first remove(key, value) succeeds; the second returns false.
+        if (!activeRequests.remove(requesterId, request)) {
             return CompletableFuture.completedFuture(false);
         }
 
         Player requester = Bukkit.getPlayer(requesterId);
         if (requester == null || !requester.isOnline()) {
-            activeRequests.remove(requesterId);
             return CompletableFuture.completedFuture(false);
         }
 
-        activeRequests.remove(requesterId);
-        
+        database.incrementStat(accepterId, "total_accepted");
+
+        // Remember who teleported to whom (for post-teleport rating)
+        requesterToTarget.put(requesterId, accepterId);
+
         final boolean captureLocation = plugin.getConfigManager().captureLocationOnAccept();
-        final Location capturedDestination = captureLocation ? accepter.getLocation().clone() : null;
-        final UUID accepterIdForValidation = accepter.getUniqueId();
-        
+        final Location captured       = captureLocation ? accepter.getLocation().clone() : null;
+        final UUID accepterIdFinal    = accepterId;
+
         Bukkit.getScheduler().runTask(plugin, () -> {
-            Player requesterNow = Bukkit.getPlayer(requesterId);
-            Player accepterNow = Bukkit.getPlayer(accepterIdForValidation);
-            
-            if (requesterNow == null || !requesterNow.isOnline()) {
+            Player req = Bukkit.getPlayer(requesterId);
+            Player acc = Bukkit.getPlayer(accepterIdFinal);
+            if (req == null || !req.isOnline()) {
+                requesterToTarget.remove(requesterId); // leak fix: requester went offline
                 return;
             }
-            
-            Location teleportDestination;
-            if (captureLocation && capturedDestination != null) {
-                if (capturedDestination.getWorld() != null && Bukkit.getWorld(capturedDestination.getWorld().getUID()) != null) {
-                    teleportDestination = capturedDestination;
-                } else {
-                    if (accepterNow != null && accepterNow.isOnline()) {
-                        teleportDestination = accepterNow.getLocation();
-                    } else {
-                        return;
-                    }
-                }
+
+            Location dest;
+            if (captureLocation && captured != null
+                    && captured.getWorld() != null
+                    && Bukkit.getWorld(captured.getWorld().getUID()) != null) {
+                dest = captured;
+            } else if (acc != null && acc.isOnline()) {
+                dest = acc.getLocation();
             } else {
-                if (accepterNow != null && accepterNow.isOnline()) {
-                    teleportDestination = accepterNow.getLocation();
-                } else {
-                    return;
-                }
+                requesterToTarget.remove(requesterId); // leak fix: accepter went offline
+                return;
             }
-            
-            teleportPlayer(requesterNow, teleportDestination);
+            teleportPlayer(req, dest);
         });
-        
+
         return CompletableFuture.completedFuture(true);
     }
 
     public CompletableFuture<Boolean> denyRequest(Player denier, UUID requesterId) {
-        UUID denierId = denier.getUniqueId();
-        
-        if (!activeRequests.containsKey(requesterId) || !activeRequests.get(requesterId).equals(denierId)) {
+        TPARequest request = activeRequests.get(requesterId);
+        if (request == null || !request.getTargetId().equals(denier.getUniqueId())) {
             return CompletableFuture.completedFuture(false);
         }
-
-        activeRequests.remove(requesterId);
+        // ── FIX: atomic compare-and-remove prevents double-deny race condition ──
+        if (!activeRequests.remove(requesterId, request)) {
+            return CompletableFuture.completedFuture(false);
+        }
+        database.incrementStat(denier.getUniqueId(), "total_denied");
         return CompletableFuture.completedFuture(true);
     }
 
     public boolean cancelRequest(UUID requesterId) {
-        if (activeRequests.containsKey(requesterId)) {
-            activeRequests.remove(requesterId);
-            return true;
-        }
-        return false;
+        return activeRequests.remove(requesterId) != null;
     }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Teleport with warmup
+    // ──────────────────────────────────────────────────────────────────────────
 
     public void teleportPlayer(Player player, Location destination) {
         UUID playerId = player.getUniqueId();
-        
-        if (pendingTeleports.containsKey(playerId)) {
-            return;
-        }
+        if (pendingTeleports.containsKey(playerId)) return;
 
         int delay = plugin.getConfigManager().getTeleportDelay();
         if (delay > 0 && !player.hasPermission("papertpa.delay.bypass")) {
-            Location startLocation = player.getLocation().clone();
-            PendingTeleport pending = new PendingTeleport(player, destination, startLocation, delay);
+            Location start = player.getLocation().clone();
+            PendingTeleport pending = new PendingTeleport(player, destination, start, delay);
             pendingTeleports.put(playerId, pending);
-            
-            java.util.Map<String, String> placeholders = new java.util.HashMap<>();
-            placeholders.put("time", String.valueOf(delay));
-            dev.indrajeeth.papertpa.util.MessageUtil.sendMessageWithPlaceholders(
-                player,
-                plugin.getConfigManager().getPrefix() + 
-                plugin.getConfigManager().getMessage("teleport.starting", placeholders)
-            );
+
+            Map<String, String> ph = new HashMap<>();
+            ph.put("time", String.valueOf(delay));
+            MessageUtil.sendMessageWithPlaceholders(player,
+                plugin.getConfigManager().getPrefix()
+                + plugin.getConfigManager().getMessage("teleport.starting", ph));
             SoundUtil.play(player, "teleport-start");
-            
+
             BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
                 PendingTeleport tp = pendingTeleports.get(playerId);
                 if (tp == null || !tp.isValid()) {
                     pendingTeleports.remove(playerId);
                     return;
                 }
-                
                 tp.tick();
-            }, 20L, 20L); 
-            
+            }, 20L, 20L);
             pending.setTask(task);
         } else {
             performTeleport(player, destination);
         }
     }
 
-    private void performTeleport(Player player, Location destination) {
+    void performTeleport(Player player, Location destination) {
         if (destination == null) {
+            requesterToTarget.remove(player.getUniqueId()); // leak fix
             return;
         }
-        
-        if (destination.getWorld() == null || Bukkit.getWorld(destination.getWorld().getUID()) == null) {
+        if (destination.getWorld() == null
+                || Bukkit.getWorld(destination.getWorld().getUID()) == null) {
+            requesterToTarget.remove(player.getUniqueId()); // leak fix
             return;
         }
-            
         if (!player.isOnline()) {
+            requesterToTarget.remove(player.getUniqueId()); // leak fix
             return;
         }
-        
         if (!isSafeLocation(destination)) {
+            requesterToTarget.remove(player.getUniqueId()); // leak fix
+            MessageUtil.sendMessageWithPlaceholders(player,
+                    plugin.getConfigManager().getPrefix()
+                    + plugin.getConfigManager().getMessage("teleport.unsafe"));
             return;
         }
-        
+
         player.teleportAsync(destination).thenAccept(success -> {
             if (success) {
                 SoundUtil.play(player, "teleport-success");
+                scheduleRatingPrompt(player.getUniqueId());
+            } else {
+                requesterToTarget.remove(player.getUniqueId()); // leak fix: async teleport failed
             }
         });
     }
 
-    private boolean isSafeLocation(Location location) {
-        org.bukkit.block.Block feetBlock = location.getBlock();
-        org.bukkit.block.Block headBlock = location.clone().add(0, 1, 0).getBlock();
-        org.bukkit.block.Block groundBlock = location.clone().subtract(0, 1, 0).getBlock();
-        
-        boolean feetSafe = feetBlock.getType().isAir() || !feetBlock.getType().isSolid();
-        boolean headSafe = headBlock.getType().isAir() || !headBlock.getType().isSolid();
-        
-        boolean hasGround = groundBlock.getType().isSolid();
-        
-        return feetSafe && headSafe && hasGround;
+    // ── FIX: dangerous material whitelist for safe-location checks ────────────
+    private static final Set<org.bukkit.Material> DANGEROUS_MATERIALS = Set.of(
+            org.bukkit.Material.LAVA,
+            org.bukkit.Material.FIRE,
+            org.bukkit.Material.MAGMA_BLOCK,
+            org.bukkit.Material.SOUL_FIRE,
+            org.bukkit.Material.CAMPFIRE,
+            org.bukkit.Material.SOUL_CAMPFIRE,
+            org.bukkit.Material.SWEET_BERRY_BUSH,
+            org.bukkit.Material.WITHER_ROSE
+    );
+
+    private boolean isSafeLocation(Location loc) {
+        if (loc.getWorld() == null) return false;
+        // Void check — below world minimum height is instant death
+        if (loc.getY() < loc.getWorld().getMinHeight()) return false;
+
+        org.bukkit.block.Block feet   = loc.getBlock();
+        org.bukkit.block.Block head   = loc.clone().add(0, 1, 0).getBlock();
+        org.bukkit.block.Block ground = loc.clone().subtract(0, 1, 0).getBlock();
+
+        boolean feetClear  = feet.getType().isAir()   || !feet.getType().isSolid();
+        boolean headClear  = head.getType().isAir()   || !head.getType().isSolid();
+        boolean hasGround  = ground.getType().isSolid();
+        // Lava / fire / magma / campfire / etc. are deadly even when passable
+        boolean notHazard  = !DANGEROUS_MATERIALS.contains(feet.getType())
+                          && !DANGEROUS_MATERIALS.contains(head.getType())
+                          && !DANGEROUS_MATERIALS.contains(ground.getType());
+
+        return feetClear && headClear && hasGround && notHazard;
     }
 
-    public void cancelTeleport(UUID playerId) {
-        PendingTeleport pending = pendingTeleports.remove(playerId);
-        if (pending != null) {
-            pending.cancel();
-        }
+    // ──────────────────────────────────────────────────────────────────────────
+    // Post-teleport rating prompt
+    // ──────────────────────────────────────────────────────────────────────────
+
+    private void scheduleRatingPrompt(UUID playerId) {
+        UUID targetId = requesterToTarget.remove(playerId);
+        if (targetId == null) return;
+
+        int delaySec = plugin.getConfigManager().getRatingDelay();
+        if (delaySec <= 0) return;
+
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            Player rater = Bukkit.getPlayer(playerId);
+            if (rater == null || !rater.isOnline()) return;
+
+            // Check notification preference async, then act on main thread
+            database.isNotificationEnabled(playerId).thenAccept(notifEnabled -> {
+                if (!notifEnabled) return;
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    Player r = Bukkit.getPlayer(playerId);
+                    if (r == null || !r.isOnline()) return;
+
+                    String targetName = Optional.ofNullable(Bukkit.getPlayer(targetId))
+                            .map(Player::getName)
+                            .orElseGet(() -> Bukkit.getOfflinePlayer(targetId).getName() != null
+                                    ? Bukkit.getOfflinePlayer(targetId).getName() : targetId.toString());
+
+                    // Store rating session in GUIManager
+                    RatingSession session = new RatingSession(playerId, targetId, System.currentTimeMillis());
+                    plugin.getGUIManager().addRatingSession(playerId, session);
+
+                    // Send clickable rating notification
+                    Component prompt = MessageUtil.toComponent(
+                            plugin.getConfigManager().getPrefix()
+                            + plugin.getConfigManager().getMessage("rating.prompt"));
+                    Component clickable = Component.text()
+                            .append(prompt)
+                            .append(Component.text(" "))
+                            .append(Component.text("[Rate]")
+                                    .color(NamedTextColor.YELLOW)
+                                    .clickEvent(ClickEvent.runCommand("/tprate " + targetName))
+                                    .hoverEvent(HoverEvent.showText(
+                                            MessageUtil.toComponent(
+                                                    plugin.getConfigManager().getMessage("rating.click-to-rate-hover")))))
+                            .build();
+                    r.sendMessage(clickable);
+                    SoundUtil.play(r, "rating-prompt");
+                });
+            });
+        }, delaySec * 20L);
     }
 
-    public Set<UUID> getPendingTeleports() {
-        return new HashSet<>(pendingTeleports.keySet());
+    // ──────────────────────────────────────────────────────────────────────────
+    // Queries
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /** Returns the TPARequest sent by requesterId, or null if none. */
+    public TPARequest getRequest(UUID requesterId) {
+        return activeRequests.get(requesterId);
     }
 
     public List<UUID> getPendingRequestsFor(UUID playerId) {
-        List<UUID> requests = new ArrayList<>();
-        for (Map.Entry<UUID, UUID> entry : activeRequests.entrySet()) {
-            if (entry.getValue().equals(playerId)) {
-                requests.add(entry.getKey());
-            }
+        List<UUID> list = new ArrayList<>();
+        for (Map.Entry<UUID, TPARequest> e : activeRequests.entrySet()) {
+            if (e.getValue().getTargetId().equals(playerId)) list.add(e.getKey());
         }
-        return requests;
+        return list;
     }
 
     public List<UUID> getSentRequestsBy(UUID playerId) {
-        List<UUID> requests = new ArrayList<>();
-        if (activeRequests.containsKey(playerId)) {
-            requests.add(activeRequests.get(playerId));
-        }
-        return requests;
+        TPARequest req = activeRequests.get(playerId);
+        return req != null ? List.of(req.getTargetId()) : Collections.emptyList();
     }
 
     public long getCooldown(UUID playerId) {
         return cooldowns.getOrDefault(playerId, 0L);
     }
 
-    public void cleanupExpiredRequests() {
-        List<UUID> toRemove = new ArrayList<>();
-        
-        for (UUID requesterId : toRemove) {
-            activeRequests.remove(requesterId);
-        }
+    public Set<UUID> getPendingTeleports() {
+        return new HashSet<>(pendingTeleports.keySet());
     }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Cleanup
+    // ──────────────────────────────────────────────────────────────────────────
+
+    public void cleanupExpiredRequests() {
+        long now       = System.currentTimeMillis();
+        long timeoutMs = plugin.getConfigManager().getRequestTimeout() * 1000L;
+        activeRequests.entrySet().removeIf(e -> {
+            if (now - e.getValue().getRequestTime() > timeoutMs) {
+                UUID requesterId = e.getKey();
+                requesterToTarget.remove(requesterId); // leak fix
+                Player requester = Bukkit.getPlayer(requesterId);
+                if (requester != null && requester.isOnline()) {
+                    MessageUtil.sendMessageWithPlaceholders(requester,
+                            plugin.getConfigManager().getPrefix()
+                            + plugin.getConfigManager().getMessage("requests.expired"));
+                    SoundUtil.play(requester, "request-expired");
+                }
+                return true;
+            }
+            return false;
+        });
+    }
+
+    public void cancelTeleport(UUID playerId) {
+        PendingTeleport pt = pendingTeleports.remove(playerId);
+        if (pt != null) pt.cancel();
+        requesterToTarget.remove(playerId); // leak fix: warmup cancelled, no teleport = no rating
+    }
+
+    public void removePendingTeleport(UUID playerId) {
+        pendingTeleports.remove(playerId);
+    }
+
+    public void performTeleportDirect(Player player, Location dest) {
+        performTeleport(player, dest);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // PendingTeleport inner class
+    // ──────────────────────────────────────────────────────────────────────────
 
     public static class PendingTeleport {
         private final Player player;
@@ -259,94 +397,63 @@ public class TeleportRequestManager {
         private int remainingSeconds;
         private BukkitTask task;
 
-        public PendingTeleport(Player player, Location destination, Location startLocation, int delaySeconds) {
-            this.player = player;
-            this.destination = destination;
-            this.startLocation = startLocation;
+        public PendingTeleport(Player player, Location destination,
+                               Location startLocation, int delaySeconds) {
+            this.player           = player;
+            this.destination      = destination;
+            this.startLocation    = startLocation;
             this.remainingSeconds = delaySeconds;
         }
 
         public void tick() {
-            if (!player.isOnline()) {
-                cancel();
-                return;
-            }
+            if (!player.isOnline()) { cancel(); return; }
 
-            Location current = player.getLocation();
-            if (current.getWorld() != startLocation.getWorld() ||
-                current.distance(startLocation) > 0.5) {
-                cancel();
+            Location cur = player.getLocation();
+            if (cur.getWorld() != startLocation.getWorld()
+                    || cur.distance(startLocation) > 0.5) {
                 PaperTpa plugin = PaperTpa.getInstance();
-                dev.indrajeeth.papertpa.util.MessageUtil.sendMessageWithPlaceholders(
-                    player, 
-                    plugin.getConfigManager().getPrefix() + 
-                    plugin.getConfigManager().getMessage("teleport.cancelled-moved")
-                );
+                MessageUtil.sendMessageWithPlaceholders(player,
+                        plugin.getConfigManager().getPrefix()
+                        + plugin.getConfigManager().getMessage("teleport.cancelled-moved"));
+                cancel();
                 return;
             }
 
             PaperTpa plugin = PaperTpa.getInstance();
             if (remainingSeconds > 0) {
-                java.util.Map<String, String> placeholders = new java.util.HashMap<>();
-                placeholders.put("time", String.valueOf(remainingSeconds));
-                dev.indrajeeth.papertpa.util.MessageUtil.sendMessageWithPlaceholders(
-                    player,
-                    plugin.getConfigManager().getPrefix() + 
-                    plugin.getConfigManager().getMessage("teleport.countdown", placeholders)
-                );
-                dev.indrajeeth.papertpa.util.SoundUtil.play(player, "teleport-countdown");
+                Map<String, String> ph = new HashMap<>();
+                ph.put("time", String.valueOf(remainingSeconds));
+                MessageUtil.sendMessageWithPlaceholders(player,
+                        plugin.getConfigManager().getPrefix()
+                        + plugin.getConfigManager().getMessage("teleport.countdown", ph));
+                SoundUtil.play(player, "teleport-countdown");
             }
 
             remainingSeconds--;
-            if (remainingSeconds <= 0) {
-                complete();
-            }
+            if (remainingSeconds <= 0) complete();
         }
 
         private void complete() {
-            if (task != null) {
-                task.cancel();
-            }
-            TeleportRequestManager manager = PaperTpa.getInstance().getTeleportManager();
-            manager.removePendingTeleport(player.getUniqueId());
-            manager.performTeleportDirect(player, destination);
+            if (task != null) task.cancel();
+            TeleportRequestManager mgr = PaperTpa.getInstance().getTeleportManager();
+            mgr.removePendingTeleport(player.getUniqueId());
+            mgr.performTeleportDirect(player, destination);
         }
 
         public void cancel() {
-            if (task != null) {
-                task.cancel();
-            }
+            if (task != null) task.cancel();
             PaperTpa.getInstance().getTeleportManager().removePendingTeleport(player.getUniqueId());
             if (player.isOnline()) {
                 PaperTpa plugin = PaperTpa.getInstance();
-                dev.indrajeeth.papertpa.util.MessageUtil.sendMessageWithPlaceholders(
-                    player,
-                    plugin.getConfigManager().getPrefix() + 
-                    plugin.getConfigManager().getMessage("teleport.cancelled")
-                );
-                dev.indrajeeth.papertpa.util.SoundUtil.play(player, "teleport-cancelled");
+                MessageUtil.sendMessageWithPlaceholders(player,
+                        plugin.getConfigManager().getPrefix()
+                        + plugin.getConfigManager().getMessage("teleport.cancelled"));
+                SoundUtil.play(player, "teleport-cancelled");
             }
         }
 
-        public boolean isValid() {
-            return player.isOnline() && remainingSeconds > 0;
-        }
-
-        public void setTask(BukkitTask task) {
-            this.task = task;
-        }
-
-        public int getRemainingSeconds() {
-            return remainingSeconds;
-        }
-    }
-
-    public void performTeleportDirect(Player player, Location destination) {
-        performTeleport(player, destination);
-    }
-
-    public void removePendingTeleport(UUID playerId) {
-        pendingTeleports.remove(playerId);
+        public boolean isValid()             { return player.isOnline() && remainingSeconds > 0; }
+        public void    setTask(BukkitTask t) { this.task = t; }
+        public int     getRemainingSeconds() { return remainingSeconds; }
     }
 }
-

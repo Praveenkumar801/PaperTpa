@@ -1,0 +1,167 @@
+package dev.indrajeeth.papertpa.gui;
+
+import dev.indrajeeth.papertpa.PaperTpa;
+import dev.indrajeeth.papertpa.model.RatingSession;
+import dev.indrajeeth.papertpa.util.ItemResolver;
+import dev.indrajeeth.papertpa.util.MessageUtil;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Post-teleport rating GUI. Allows the teleported player to pick 1–5 stars
+ * and optionally report a trap, then confirm their rating.
+ */
+public class RatingGUI implements InventoryHolder {
+
+    private final RatingSession session;
+    private final Inventory inventory;
+
+    // Default star slots (row 2, positions 1-5)
+    private static final int[] DEFAULT_STAR_SLOTS   = {10, 11, 12, 13, 14};
+    private static final int   DEFAULT_TRAP_SLOT    = 16;
+    private static final int   DEFAULT_CONFIRM_SLOT = 22;
+
+    public RatingGUI(PaperTpa plugin, RatingSession session) {
+        this.session = session;
+
+        ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.rating");
+        String title = cfg != null ? cfg.getString("title", "&6Rate your experience") : "&6Rate your experience";
+        int size     = cfg != null ? cfg.getInt("size", 27) : 27;
+
+        this.inventory = Bukkit.createInventory(this, size,
+                net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
+                        .legacyAmpersand().deserialize(title));
+
+        refresh(plugin);
+    }
+
+    /** Rebuild all items to reflect the current session state. */
+    public void refresh(PaperTpa plugin) {
+        ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.rating");
+        int size = inventory.getSize();
+
+        // Fill
+        ItemStack filler = cfg != null
+                ? ItemResolver.resolve(cfg.getConfigurationSection("filler-item"))
+                : new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        for (int i = 0; i < size; i++) inventory.setItem(i, filler);
+
+        // Star slots
+        int[] starSlots = DEFAULT_STAR_SLOTS;
+        if (cfg != null) {
+            List<?> raw = cfg.getList("star-slots");
+            if (raw != null && !raw.isEmpty()) {
+                starSlots = raw.stream().mapToInt(o -> (int) o).toArray();
+            }
+        }
+        for (int i = 0; i < starSlots.length; i++) {
+            int stars = i + 1;
+            inventory.setItem(starSlots[i], buildStarItem(plugin, cfg, stars, session.getStars() >= stars));
+        }
+
+        // Trap-report toggle
+        int trapSlot = cfg != null ? cfg.getInt("trap-report-slot", DEFAULT_TRAP_SLOT) : DEFAULT_TRAP_SLOT;
+        inventory.setItem(trapSlot, buildTrapItem(plugin, cfg, session.isTrapReport()));
+
+        // Confirm
+        int confirmSlot = cfg != null ? cfg.getInt("confirm-slot", DEFAULT_CONFIRM_SLOT) : DEFAULT_CONFIRM_SLOT;
+        inventory.setItem(confirmSlot, buildConfirmItem(plugin, cfg, session.isReady()));
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Item builders
+    // ──────────────────────────────────────────────────────────────────────────
+
+    private static ItemStack buildStarItem(PaperTpa plugin, ConfigurationSection cfg,
+                                            int stars, boolean filled) {
+        ConfigurationSection starCfg = cfg != null ? cfg.getConfigurationSection("star-item") : null;
+        String name = starCfg != null ? starCfg.getString("name", "&e%stars% ⭐") : "&e%stars% ⭐";
+        name = name.replace("%stars%", String.valueOf(stars));
+
+        if (starCfg != null) {
+            return ItemResolver.resolve(starCfg, Map.of("stars", String.valueOf(stars)));
+        }
+
+        // Fallback: gold sword for filled, gray for empty
+        Material mat  = filled ? Material.GOLDEN_SWORD : Material.STONE_SWORD;
+        ItemStack item = new ItemStack(mat);
+        ItemMeta  meta = item.getItemMeta();
+        if (meta != null) {
+            meta.displayName(MessageUtil.toComponent(filled ? "&e" + stars + " ⭐" : "&7" + stars + " ⭐"));
+            List<net.kyori.adventure.text.Component> lore = new ArrayList<>();
+            lore.add(MessageUtil.toComponent("&7Click to select " + stars + " star(s)"));
+            meta.lore(lore);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private static ItemStack buildTrapItem(PaperTpa plugin, ConfigurationSection cfg, boolean trapOn) {
+        ConfigurationSection trapCfg = cfg != null ? cfg.getConfigurationSection("trap-report-item") : null;
+        if (trapCfg != null) {
+            return ItemResolver.resolve(trapCfg, Map.of("state", trapOn ? "&cON" : "&aOFF"));
+        }
+        Material mat  = trapOn ? Material.RED_CONCRETE : Material.GREEN_CONCRETE;
+        ItemStack item = new ItemStack(mat);
+        ItemMeta  meta = item.getItemMeta();
+        if (meta != null) {
+            meta.displayName(MessageUtil.toComponent("&c🚩 Report Trap: " + (trapOn ? "&cON" : "&aOFF")));
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private static ItemStack buildConfirmItem(PaperTpa plugin, ConfigurationSection cfg, boolean ready) {
+        ConfigurationSection confirmCfg = cfg != null ? cfg.getConfigurationSection("confirm-item") : null;
+        Material mat = ready ? Material.EMERALD : Material.BARRIER;
+        if (confirmCfg != null && ready) {
+            return ItemResolver.resolve(confirmCfg);
+        }
+        ItemStack item = new ItemStack(mat);
+        ItemMeta  meta = item.getItemMeta();
+        if (meta != null) {
+            meta.displayName(MessageUtil.toComponent(ready ? "&aConfirm Rating" : "&7Select stars first"));
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+
+    @Override
+    public Inventory getInventory() { return inventory; }
+    public RatingSession getSession() { return session; }
+
+    /** Returns the star value (1-5) for the clicked slot, or -1 if not a star slot. */
+    public int getStarForSlot(PaperTpa plugin, int slot) {
+        ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.rating");
+        int[] starSlots = DEFAULT_STAR_SLOTS;
+        if (cfg != null) {
+            List<?> raw = cfg.getList("star-slots");
+            if (raw != null && !raw.isEmpty()) starSlots = raw.stream().mapToInt(o -> (int) o).toArray();
+        }
+        for (int i = 0; i < starSlots.length; i++) {
+            if (starSlots[i] == slot) return i + 1;
+        }
+        return -1;
+    }
+
+    public int getTrapSlot(PaperTpa plugin) {
+        ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.rating");
+        return cfg != null ? cfg.getInt("trap-report-slot", DEFAULT_TRAP_SLOT) : DEFAULT_TRAP_SLOT;
+    }
+
+    public int getConfirmSlot(PaperTpa plugin) {
+        ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.rating");
+        return cfg != null ? cfg.getInt("confirm-slot", DEFAULT_CONFIRM_SLOT) : DEFAULT_CONFIRM_SLOT;
+    }
+}
