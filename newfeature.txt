@@ -1,0 +1,296 @@
+## 🎯 Target Environment
+
+* Platform: **PaperMC 1.21.8**
+* Java: **Java 21**
+* Build System: **Maven**
+* Storage: **SQLite (default, required)**
+* Must support: **PlaceholderAPI (optional hook)**
+* Fully async-safe (no blocking main thread)
+* Production-ready code (not pseudo code)
+
+---
+
+# 📦 Overview
+
+Develop a complete rework of `/tpa` featuring:
+
+* GUI-driven teleport interaction
+* Player reputation system
+* Rating system
+* Trap detection
+* Anti-abuse safeguards
+* Performance-optimized async database handling
+
+The system must be modular, scalable, and cleanly structured.
+
+---
+
+# 🏗 Architecture Requirements (MANDATORY)
+
+Use service-based architecture.
+
+### Required Classes / Managers
+
+* `TPARequestManager`
+* `TeleportManager`
+* `ReputationManager`
+* `RatingManager`
+* `GUIManager`
+* `DataService` (SQLite access)
+* `ConfigManager`
+
+### Rules
+
+* No business logic inside command classes
+* No synchronous SQLite calls on main thread
+* Use CompletableFuture or async scheduler for DB
+* Cache player reputation data in memory
+* Clean separation of concerns
+* Proper listener-based event handling
+
+---
+
+# 🗄 Database Requirements (SQLite)
+
+Use a single SQLite database file.
+
+### Tables
+
+**players**
+
+* uuid (PK)
+* total_sent
+* total_received
+* total_accepted
+* total_denied
+* trap_count
+* rating_average
+* rating_count
+
+**ratings**
+
+* id (PK)
+* from_uuid
+* to_uuid
+* stars (1–5)
+* trap_reported (boolean)
+* timestamp
+
+All queries must be async.
+
+Cache player stats on join and update async.
+
+---
+
+# ⚙ Core Features
+
+## 1️⃣ GUI-Based TPA System
+
+When `/tpa <player>` is sent:
+
+Target receives GUI with:
+
+* ✅ Accept
+* ❌ Deny
+* 👤 View Player Info
+
+No chat-only interaction unless GUI is disabled in config.
+
+---
+
+## 2️⃣ Player Info GUI Panel
+
+Must display:
+
+* Total TPA sent
+* Total received
+* Accepted
+* Denied
+* Trap %
+* Average ⭐ rating
+* Total ratings
+* Reputation tier (Trusted / Neutral / Suspicious)
+
+---
+
+## 3️⃣ Teleport Flow
+
+* Configurable warmup
+* Configurable request expiry
+* Cancel if:
+
+  * Either player logs out
+  * Player takes damage during warmup
+  * Player enters combat (if detectable)
+* Prevent teleport into unsafe locations (lava, void, inside block)
+
+---
+
+# ⭐ Rating System
+
+After successful teleport:
+
+* Wait configurable delay (default: 30s)
+* Prompt teleported player with rating GUI
+* Allow:
+
+  * 1–5 stars
+  * Optional trap report toggle
+
+### Restrictions
+
+* Only 1 rating per teleport instance
+* Cannot rate if teleport duration < 5 seconds
+* Rating only allowed if teleport completed
+
+---
+
+# 🚩 Trap Detection Logic
+
+Trap is counted if:
+
+* Player dies within configurable window (default 20s)
+* OR player manually reports trap
+
+Trap % formula:
+
+```
+(trap_count / total_accepted) * 100
+```
+
+If trap % ≥ 25% → Reputation tier becomes Suspicious.
+
+---
+
+# 🏆 Reputation Tiers
+
+* 🟢 Trusted → 4.5⭐+
+* 🟡 Neutral → 3.0–4.4⭐
+* 🔴 Suspicious → Trap % ≥ 25%
+
+Tier must be calculated dynamically.
+
+---
+
+# 🛡 Anti-Abuse & Protection
+
+* Cooldown between `/tpa` requests
+* Configurable per-player request limit
+* Auto-cancel expired requests
+* Prevent duplicate requests
+* Ignore self-teleport
+* Prevent rating spam
+* Log suspicious activity
+
+Optional:
+
+* `/tpback` if killed within trap window
+
+---
+
+# 📜 Commands
+
+```
+/tpa <player>
+/tpaccept
+/tpdeny
+/tpa toggle gui
+/tpa toggle ratings
+/tpa info <player>
+/tpa stats
+/tpa leaderboard
+```
+
+Leaderboard must sort by rating_average (min 5 ratings required).
+
+---
+
+# 📊 Performance Requirements
+
+* Support 200+ concurrent players
+* O(1) request lookup using Map<UUID, Request>
+* No memory leaks
+* Remove expired requests properly
+* All DB calls async
+* Use prepared statements
+
+---
+
+# 🧰 Config (YAML)
+
+```yaml
+request-expire: 60
+warmup: 5
+rating-delay: 30
+trap-window: 20
+tpback-on-trap: true
+cooldown: 10
+min-ratings-for-leaderboard: 5
+```
+
+All values must be reloadable via `/tpa reload`.
+
+---
+
+# 🎨 GUI Requirements
+
+* Customizable item icons
+* Customizable titles
+* Customizable lore
+* Sound feedback on click
+* Clean inventory layout
+
+---
+
+# 🔌 PlaceholderAPI Support (If Present)
+
+Placeholders:
+
+* %tpa_rating%
+* %tpa_trap_percent%
+* %tpa_reputation_tier%
+* %tpa_total_accepted%
+
+Hook must load safely if PAPI not installed.
+
+---
+
+# 🧪 Edge Cases to Handle
+
+* Target logs out mid-request
+* Sender logs out mid-warmup
+* Player switches world
+* Teleport into blocked region
+* Server restart during request
+* SQLite corruption fallback handling
+
+---
+
+# 📦 Deliverables
+
+AI must generate:
+
+1. Full Maven project structure
+2. `plugin.yml`
+3. Main class
+4. All managers
+5. SQLite setup
+6. GUI builders
+7. Commands
+8. Listeners
+9. Clean readable code
+10. No pseudo code
+
+---
+
+# 🔥 Non-Negotiables
+
+* No deprecated API
+* No blocking calls
+* No static abuse
+* No spaghetti code
+* No chat-only fallback unless config disables GUI
+
+
+
+Also be honest and refer open sourced plugin for proper code strucutre and rebase whole code strucutre if needed
