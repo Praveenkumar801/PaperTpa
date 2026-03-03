@@ -1,8 +1,8 @@
-package me.maybeizen.EasyTPA.integration;
+package dev.indrajeeth.papertpa.integration;
 
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
-import me.maybeizen.EasyTPA.EasyTPA;
-import me.maybeizen.EasyTPA.manager.TeleportRequestManager;
+import dev.indrajeeth.papertpa.PaperTpa;
+import dev.indrajeeth.papertpa.manager.TeleportRequestManager;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
@@ -10,15 +10,15 @@ import java.util.List;
 import java.util.UUID;
 
 public class PlaceholderAPIIntegration extends PlaceholderExpansion {
-    private final EasyTPA plugin;
+    private final PaperTpa plugin;
 
-    public PlaceholderAPIIntegration(EasyTPA plugin) {
+    public PlaceholderAPIIntegration(PaperTpa plugin) {
         this.plugin = plugin;
     }
 
     @Override
     public String getIdentifier() {
-        return "easytpa";
+        return "papertpa";
     }
 
     @Override

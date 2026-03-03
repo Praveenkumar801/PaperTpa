@@ -1,8 +1,8 @@
-package me.maybeizen.EasyTPA.command;
+package dev.indrajeeth.papertpa.command;
 
 import com.mojang.brigadier.CommandDispatcher;
-import me.maybeizen.EasyTPA.EasyTPA;
-import me.maybeizen.EasyTPA.util.MessageUtil;
+import dev.indrajeeth.papertpa.PaperTpa;
+import dev.indrajeeth.papertpa.util.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.UUID;
 
 public class TPAcceptCommand extends SimpleCommandHandler {
-    public TPAcceptCommand(EasyTPA plugin) {
+    public TPAcceptCommand(PaperTpa plugin) {
         super(plugin);
     }
 
@@ -26,7 +26,8 @@ public class TPAcceptCommand extends SimpleCommandHandler {
         }
 
         Player player = (Player) sender;
-        
+        if (!checkPermission(player, "papertpa.tpaccept")) return true;
+
         if (args.length == 0) {
             List<UUID> pending = requestManager.getPendingRequestsFor(player.getUniqueId());
             if (pending.isEmpty()) {
@@ -77,8 +78,8 @@ public class TPAcceptCommand extends SimpleCommandHandler {
                     MessageUtil.sendMessageWithPlaceholders(accepter, configManager.getPrefix() + configManager.getMessage("requests.accepted-target", placeholders));
 
                     if (configManager.areSoundsEnabled()) {
-                        accepter.playSound(accepter.getLocation(), org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
-                        requester.playSound(requester.getLocation(), org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+                        dev.indrajeeth.papertpa.util.SoundUtil.play(accepter, "request-accepted");
+                        dev.indrajeeth.papertpa.util.SoundUtil.play(requester, "request-accepted");
                     }
                 } else {
                     MessageUtil.sendMessageWithPlaceholders(accepter, configManager.getPrefix() + configManager.getMessage("requests.no-pending-request"));

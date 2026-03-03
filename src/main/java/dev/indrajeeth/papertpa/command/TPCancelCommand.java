@@ -1,14 +1,14 @@
-package me.maybeizen.EasyTPA.command;
+package dev.indrajeeth.papertpa.command;
 
 import com.mojang.brigadier.CommandDispatcher;
-import me.maybeizen.EasyTPA.EasyTPA;
-import me.maybeizen.EasyTPA.util.MessageUtil;
+import dev.indrajeeth.papertpa.PaperTpa;
+import dev.indrajeeth.papertpa.util.MessageUtil;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 public class TPCancelCommand extends SimpleCommandHandler {
-    public TPCancelCommand(EasyTPA plugin) {
+    public TPCancelCommand(PaperTpa plugin) {
         super(plugin);
     }
 
@@ -20,6 +20,7 @@ public class TPCancelCommand extends SimpleCommandHandler {
         }
 
         Player player = (Player) sender;
+        if (!checkPermission(player, "papertpa.tpa")) return true;
 
         requestManager.cancelTeleport(player.getUniqueId());
 

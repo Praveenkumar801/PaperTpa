@@ -1,8 +1,8 @@
-package me.maybeizen.EasyTPA.command;
+package dev.indrajeeth.papertpa.command;
 
 import com.mojang.brigadier.CommandDispatcher;
-import me.maybeizen.EasyTPA.EasyTPA;
-import me.maybeizen.EasyTPA.util.MessageUtil;
+import dev.indrajeeth.papertpa.PaperTpa;
+import dev.indrajeeth.papertpa.util.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.UUID;
 
 public class TPDenyCommand extends SimpleCommandHandler {
-    public TPDenyCommand(EasyTPA plugin) {
+    public TPDenyCommand(PaperTpa plugin) {
         super(plugin);
     }
 
@@ -26,7 +26,8 @@ public class TPDenyCommand extends SimpleCommandHandler {
         }
 
         Player player = (Player) sender;
-        
+        if (!checkPermission(player, "papertpa.tpdeny")) return true;
+
         if (args.length == 0) {
             List<UUID> pending = requestManager.getPendingRequestsFor(player.getUniqueId());
             if (pending.isEmpty()) {

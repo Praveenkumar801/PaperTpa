@@ -1,15 +1,15 @@
-package me.maybeizen.EasyTPA.command;
+package dev.indrajeeth.papertpa.command;
 
 import com.mojang.brigadier.CommandDispatcher;
-import me.maybeizen.EasyTPA.EasyTPA;
-import me.maybeizen.EasyTPA.util.MessageUtil;
+import dev.indrajeeth.papertpa.PaperTpa;
+import dev.indrajeeth.papertpa.util.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 public class TPToggleCommand extends SimpleCommandHandler {
-    public TPToggleCommand(EasyTPA plugin) {
+    public TPToggleCommand(PaperTpa plugin) {
         super(plugin);
     }
 
@@ -21,7 +21,8 @@ public class TPToggleCommand extends SimpleCommandHandler {
         }
 
         Player player = (Player) sender;
-        
+        if (!checkPermission(player, "papertpa.toggle")) return true;
+
         plugin.getDatabaseManager().areRequestsEnabled(player.getUniqueId()).thenAccept(current -> {
             boolean newValue = !current;
             plugin.getDatabaseManager().setRequestsEnabled(player.getUniqueId(), newValue).thenRun(() -> {

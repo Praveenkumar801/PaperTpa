@@ -1,6 +1,6 @@
-package me.maybeizen.EasyTPA.util;
+package dev.indrajeeth.papertpa.util;
 
-import me.maybeizen.EasyTPA.EasyTPA;
+import dev.indrajeeth.papertpa.PaperTpa;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -54,7 +54,7 @@ public class MessageUtil {
             return;
         }
 
-        if (EasyTPA.getInstance().isPlaceholderAPIEnabled()) {
+        if (PaperTpa.getInstance().isPlaceholderAPIEnabled()) {
             message = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(player, message);
         }
 
