@@ -1,6 +1,7 @@
 package dev.indrajeeth.papertpa.manager;
 
 import dev.indrajeeth.papertpa.PaperTpa;
+import dev.indrajeeth.papertpa.util.SoundUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -155,6 +156,7 @@ public class TeleportRequestManager {
                 plugin.getConfigManager().getPrefix() + 
                 plugin.getConfigManager().getMessage("teleport.starting", placeholders)
             );
+            SoundUtil.play(player, "teleport-start");
             
             BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
                 PendingTeleport tp = pendingTeleports.get(playerId);
@@ -190,8 +192,8 @@ public class TeleportRequestManager {
         }
         
         player.teleportAsync(destination).thenAccept(success -> {
-            if (success && plugin.getConfigManager().areSoundsEnabled()) {
-                player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
+            if (success) {
+                SoundUtil.play(player, "teleport-success");
             }
         });
     }
@@ -292,6 +294,7 @@ public class TeleportRequestManager {
                     plugin.getConfigManager().getPrefix() + 
                     plugin.getConfigManager().getMessage("teleport.countdown", placeholders)
                 );
+                dev.indrajeeth.papertpa.util.SoundUtil.play(player, "teleport-countdown");
             }
 
             remainingSeconds--;
@@ -321,6 +324,7 @@ public class TeleportRequestManager {
                     plugin.getConfigManager().getPrefix() + 
                     plugin.getConfigManager().getMessage("teleport.cancelled")
                 );
+                dev.indrajeeth.papertpa.util.SoundUtil.play(player, "teleport-cancelled");
             }
         }
 
