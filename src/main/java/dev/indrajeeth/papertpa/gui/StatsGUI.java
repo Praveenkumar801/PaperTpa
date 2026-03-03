@@ -39,18 +39,14 @@ public class StatsGUI implements InventoryHolder {
                 net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
                         .legacyAmpersand().deserialize(title));
 
-        // Filler
         ItemStack filler = cfg != null
                 ? ItemResolver.resolve(cfg.getConfigurationSection("filler-item"))
                 : new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         for (int i = 0; i < size; i++) inventory.setItem(i, filler);
 
-        // Stats item (player head with lore)
         int statsSlot = cfg != null ? cfg.getInt("stats-slot", 13) : 13;
         inventory.setItem(statsSlot, buildStatsHead(plugin, cfg, targetId, targetName, stats));
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
 
     /**
      * Asynchronously fetches stats from the DB, then returns a ready-to-open StatsGUI
@@ -63,8 +59,6 @@ public class StatsGUI implements InventoryHolder {
             return new StatsGUI(plugin, targetId, name, stats);
         });
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
 
     private static ItemStack buildStatsHead(PaperTpa plugin, ConfigurationSection cfg,
                                              UUID targetId, String name, PlayerStats stats) {

@@ -26,6 +26,7 @@ public class TPNotifyCommand extends SimpleCommandHandler {
             MessageUtil.sendMessage(sender, configManager.getMessage("general.player-only"));
             return true;
         }
+        if (!checkPermission(player, "papertpa.tpa")) return true;
 
         plugin.getDatabaseManager().isNotificationEnabled(player.getUniqueId())
             .thenAccept(current -> {

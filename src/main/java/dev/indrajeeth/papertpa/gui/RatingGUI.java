@@ -25,7 +25,6 @@ public class RatingGUI implements InventoryHolder {
     private final RatingSession session;
     private final Inventory inventory;
 
-    // Default star slots (row 2, positions 1-5)
     private static final int[] DEFAULT_STAR_SLOTS   = {10, 11, 12, 13, 14};
     private static final int   DEFAULT_TRAP_SLOT    = 16;
     private static final int   DEFAULT_CONFIRM_SLOT = 22;
@@ -49,13 +48,11 @@ public class RatingGUI implements InventoryHolder {
         ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.rating");
         int size = inventory.getSize();
 
-        // Fill
         ItemStack filler = cfg != null
                 ? ItemResolver.resolve(cfg.getConfigurationSection("filler-item"))
                 : new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         for (int i = 0; i < size; i++) inventory.setItem(i, filler);
 
-        // Star slots
         int[] starSlots = DEFAULT_STAR_SLOTS;
         if (cfg != null) {
             List<?> raw = cfg.getList("star-slots");
@@ -68,18 +65,12 @@ public class RatingGUI implements InventoryHolder {
             inventory.setItem(starSlots[i], buildStarItem(plugin, cfg, stars, session.getStars() >= stars));
         }
 
-        // Trap-report toggle
         int trapSlot = cfg != null ? cfg.getInt("trap-report-slot", DEFAULT_TRAP_SLOT) : DEFAULT_TRAP_SLOT;
         inventory.setItem(trapSlot, buildTrapItem(plugin, cfg, session.isTrapReport()));
 
-        // Confirm
         int confirmSlot = cfg != null ? cfg.getInt("confirm-slot", DEFAULT_CONFIRM_SLOT) : DEFAULT_CONFIRM_SLOT;
         inventory.setItem(confirmSlot, buildConfirmItem(plugin, cfg, session.isReady()));
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Item builders
-    // ──────────────────────────────────────────────────────────────────────────
 
     private static ItemStack buildStarItem(PaperTpa plugin, ConfigurationSection cfg,
                                             int stars, boolean filled) {
@@ -91,7 +82,6 @@ public class RatingGUI implements InventoryHolder {
             return ItemResolver.resolve(starCfg, Map.of("stars", String.valueOf(stars)));
         }
 
-        // Fallback: gold sword for filled, gray for empty
         Material mat  = filled ? Material.GOLDEN_SWORD : Material.STONE_SWORD;
         ItemStack item = new ItemStack(mat);
         ItemMeta  meta = item.getItemMeta();
@@ -134,8 +124,6 @@ public class RatingGUI implements InventoryHolder {
         }
         return item;
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
 
     @Override
     public Inventory getInventory() { return inventory; }

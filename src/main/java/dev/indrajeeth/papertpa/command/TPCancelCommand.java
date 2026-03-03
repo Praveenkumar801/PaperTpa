@@ -20,6 +20,7 @@ public class TPCancelCommand extends SimpleCommandHandler {
         }
 
         Player player = (Player) sender;
+        if (!checkPermission(player, "papertpa.tpa")) return true;
 
         requestManager.cancelTeleport(player.getUniqueId());
 

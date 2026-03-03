@@ -40,17 +40,14 @@ public class RequestGUI implements InventoryHolder {
                 net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
                         .legacyAmpersand().deserialize(title));
 
-        // Fill with filler
         ItemStack filler = cfg != null
                 ? ItemResolver.resolve(cfg.getConfigurationSection("filler-item"))
                 : new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         for (int i = 0; i < size; i++) inventory.setItem(i, filler);
 
-        // ── Requester info item (player head) ────────────────────────────────
         int requesterSlot = cfg != null ? cfg.getInt("requester-slot", 4) : 4;
         inventory.setItem(requesterSlot, buildRequesterHead(plugin, requesterId, request));
 
-        // ── Accept ──────────────────────────────────────────────────────────
         int acceptSlot = cfg != null ? cfg.getInt("accept-slot", 11) : 11;
         if (cfg != null) {
             inventory.setItem(acceptSlot, ItemResolver.resolve(cfg.getConfigurationSection("accept-item")));
@@ -58,7 +55,6 @@ public class RequestGUI implements InventoryHolder {
             inventory.setItem(acceptSlot, quickItem(Material.LIME_STAINED_GLASS_PANE, "&aAccept"));
         }
 
-        // ── View Stats ───────────────────────────────────────────────────────
         int infoSlot = cfg != null ? cfg.getInt("info-slot", 13) : 13;
         if (cfg != null) {
             inventory.setItem(infoSlot, ItemResolver.resolve(cfg.getConfigurationSection("info-item")));
@@ -66,7 +62,6 @@ public class RequestGUI implements InventoryHolder {
             inventory.setItem(infoSlot, quickItem(Material.PAPER, "&eView Stats"));
         }
 
-        // ── Deny ─────────────────────────────────────────────────────────────
         int denySlot = cfg != null ? cfg.getInt("deny-slot", 15) : 15;
         if (cfg != null) {
             inventory.setItem(denySlot, ItemResolver.resolve(cfg.getConfigurationSection("deny-item")));
@@ -75,15 +70,12 @@ public class RequestGUI implements InventoryHolder {
         }
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-
     private static ItemStack buildRequesterHead(PaperTpa plugin, UUID requesterId, TPARequest request) {
         Player requester = Bukkit.getPlayer(requesterId);
         ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta meta  = (SkullMeta) skull.getItemMeta();
         if (meta == null) return skull;
 
-        // Use online player profile for texture; fall back to offline
         if (requester != null) {
             meta.setOwningPlayer(requester);
         } else {
@@ -100,7 +92,6 @@ public class RequestGUI implements InventoryHolder {
         displayName = displayName.replace("%player%", name);
         meta.displayName(MessageUtil.toComponent(displayName));
 
-        // Build lore with location + dimension
         org.bukkit.Location loc = request.getRequesterLocation();
         String dim = getDimensionName(loc.getWorld());
         int x = (int) loc.getX(), y = (int) loc.getY(), z = (int) loc.getZ();

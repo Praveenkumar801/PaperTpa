@@ -23,23 +23,15 @@ public class TeleportRequestManager {
     private final PaperTpa plugin;
     private final DatabaseManager database;
 
-    // active requests:  requesterId → TPARequest
     private final Map<UUID, TPARequest> activeRequests = new ConcurrentHashMap<>();
-    // pending warmup teleports: playerId → task wrapper
     private final Map<UUID, PendingTeleport> pendingTeleports = new ConcurrentHashMap<>();
-    // cooldowns: requesterId → last-request timestamp
     private final Map<UUID, Long> cooldowns = new ConcurrentHashMap<>();
-    // after accepted: requesterUUID → targetUUID (cleared after rating scheduled)
     private final Map<UUID, UUID> requesterToTarget = new ConcurrentHashMap<>();
 
     public TeleportRequestManager(PaperTpa plugin, DatabaseManager database) {
         this.plugin   = plugin;
         this.database = database;
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Send request
-    // ──────────────────────────────────────────────────────────────────────────
 
     /**
      * Must be called on the main thread so that {@link Player#getLocation()} is safe.
@@ -48,16 +40,13 @@ public class TeleportRequestManager {
         UUID requesterId = requester.getUniqueId();
         UUID targetId    = target.getUniqueId();
 
-        // Capture location on main thread before any async work
         Location requesterLoc = requester.getLocation().clone();
 
-        // Duplicate-request guard
         TPARequest existing = activeRequests.get(requesterId);
         if (existing != null && existing.getTargetId().equals(targetId)) {
             return CompletableFuture.completedFuture(RequestResult.ALREADY_HAS_REQUEST);
         }
 
-        // Cooldown check
         if (!requester.hasPermission("papertpa.cooldown.bypass")) {
             long last = cooldowns.getOrDefault(requesterId, 0L);
             long cooldownMs = plugin.getConfigManager().getCooldown() * 1000L;
@@ -79,7 +68,6 @@ public class TeleportRequestManager {
             database.incrementStat(requesterId, "total_sent");
             database.incrementStat(targetId,    "total_received");
 
-            // Check auto-accept preference
             return database.isAutoAcceptEnabled(targetId)
                 .thenApply(autoAccept -> autoAccept ? RequestResult.AUTO_ACCEPTED : RequestResult.SUCCESS);
         });
@@ -93,10 +81,6 @@ public class TeleportRequestManager {
         REQUESTS_DISABLED
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Accept / Deny / Cancel
-    // ──────────────────────────────────────────────────────────────────────────
-
     public CompletableFuture<Boolean> acceptRequest(Player accepter, UUID requesterId) {
         UUID accepterId = accepter.getUniqueId();
         TPARequest request = activeRequests.get(requesterId);
@@ -105,8 +89,6 @@ public class TeleportRequestManager {
         }
 
         // ── FIX: atomic compare-and-remove prevents double-accept race condition ──
-        // If two threads (e.g. /tpaccept + GUI click) both pass the check above,
-        // only the first remove(key, value) succeeds; the second returns false.
         if (!activeRequests.remove(requesterId, request)) {
             return CompletableFuture.completedFuture(false);
         }
@@ -118,7 +100,6 @@ public class TeleportRequestManager {
 
         database.incrementStat(accepterId, "total_accepted");
 
-        // Remember who teleported to whom (for post-teleport rating)
         requesterToTarget.put(requesterId, accepterId);
 
         final boolean captureLocation = plugin.getConfigManager().captureLocationOnAccept();
@@ -166,10 +147,6 @@ public class TeleportRequestManager {
     public boolean cancelRequest(UUID requesterId) {
         return activeRequests.remove(requesterId) != null;
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Teleport with warmup
-    // ──────────────────────────────────────────────────────────────────────────
 
     public void teleportPlayer(Player player, Location destination) {
         UUID playerId = player.getUniqueId();
@@ -266,10 +243,6 @@ public class TeleportRequestManager {
         return feetClear && headClear && hasGround && notHazard;
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Post-teleport rating prompt
-    // ──────────────────────────────────────────────────────────────────────────
-
     private void scheduleRatingPrompt(UUID playerId) {
         UUID targetId = requesterToTarget.remove(playerId);
         if (targetId == null) return;
@@ -281,7 +254,6 @@ public class TeleportRequestManager {
             Player rater = Bukkit.getPlayer(playerId);
             if (rater == null || !rater.isOnline()) return;
 
-            // Check notification preference async, then act on main thread
             database.isNotificationEnabled(playerId).thenAccept(notifEnabled -> {
                 if (!notifEnabled) return;
                 Bukkit.getScheduler().runTask(plugin, () -> {
@@ -293,11 +265,9 @@ public class TeleportRequestManager {
                             .orElseGet(() -> Bukkit.getOfflinePlayer(targetId).getName() != null
                                     ? Bukkit.getOfflinePlayer(targetId).getName() : targetId.toString());
 
-                    // Store rating session in GUIManager
                     RatingSession session = new RatingSession(playerId, targetId, System.currentTimeMillis());
                     plugin.getGUIManager().addRatingSession(playerId, session);
 
-                    // Send clickable rating notification
                     Component prompt = MessageUtil.toComponent(
                             plugin.getConfigManager().getPrefix()
                             + plugin.getConfigManager().getMessage("rating.prompt"));
@@ -317,10 +287,6 @@ public class TeleportRequestManager {
             });
         }, delaySec * 20L);
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Queries
-    // ──────────────────────────────────────────────────────────────────────────
 
     /** Returns the TPARequest sent by requesterId, or null if none. */
     public TPARequest getRequest(UUID requesterId) {
@@ -347,10 +313,6 @@ public class TeleportRequestManager {
     public Set<UUID> getPendingTeleports() {
         return new HashSet<>(pendingTeleports.keySet());
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Cleanup
-    // ──────────────────────────────────────────────────────────────────────────
 
     public void cleanupExpiredRequests() {
         long now       = System.currentTimeMillis();
@@ -385,10 +347,6 @@ public class TeleportRequestManager {
     public void performTeleportDirect(Player player, Location dest) {
         performTeleport(player, dest);
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // PendingTeleport inner class
-    // ──────────────────────────────────────────────────────────────────────────
 
     public static class PendingTeleport {
         private final Player player;

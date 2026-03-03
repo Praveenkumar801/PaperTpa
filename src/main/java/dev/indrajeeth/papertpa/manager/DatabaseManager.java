@@ -29,10 +29,6 @@ public class DatabaseManager {
         this.databaseFile = new File(plugin.getDataFolder(), "papertpa.db");
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Lifecycle
-    // ──────────────────────────────────────────────────────────────────────────
-
     public void initialize() {
         try {
             if (!plugin.getDataFolder().exists()) plugin.getDataFolder().mkdirs();
@@ -62,10 +58,6 @@ public class DatabaseManager {
         }
         return connection;
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Schema
-    // ──────────────────────────────────────────────────────────────────────────
 
     private void createTables() throws SQLException {
         try (Statement stmt = connection.createStatement()) {
@@ -101,10 +93,6 @@ public class DatabaseManager {
         } catch (SQLException ignored) { /* column already exists */ }
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // user_preferences
-    // ──────────────────────────────────────────────────────────────────────────
-
     public CompletableFuture<Void>    setRequestsEnabled(UUID uuid, boolean v) {
         return runAsync(() -> upsertPref(uuid, "requests_enabled", v ? 1 : 0));
     }
@@ -128,10 +116,6 @@ public class DatabaseManager {
     public CompletableFuture<Void>    setAutoAcceptEnabled(UUID uuid, boolean v) {
         return runAsync(() -> upsertPref(uuid, "auto_accept", v ? 1 : 0));
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // players — statistics
-    // ──────────────────────────────────────────────────────────────────────────
 
     public CompletableFuture<PlayerStats> getPlayerStats(UUID uuid) {
         return supplyAsync(() -> {
@@ -174,10 +158,6 @@ public class DatabaseManager {
             }
         });
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Private helpers
-    // ──────────────────────────────────────────────────────────────────────────
 
     /** Upsert a single column in user_preferences. Column validated against whitelist. */
     private void upsertPref(UUID uuid, String column, long value) {

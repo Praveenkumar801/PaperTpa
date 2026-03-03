@@ -15,16 +15,11 @@ public class GUIManager {
 
     private final PaperTpa plugin;
 
-    // Active rating sessions waiting for player input: raterUUID → session
     private final Map<UUID, RatingSession> ratingSessions = new ConcurrentHashMap<>();
 
     public GUIManager(PaperTpa plugin) {
         this.plugin = plugin;
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Request GUI
-    // ──────────────────────────────────────────────────────────────────────────
 
     /**
      * Opens the TPA request GUI for {@code viewer}, showing info about
@@ -41,10 +36,6 @@ public class GUIManager {
         RequestGUI gui = new RequestGUI(plugin, viewer, requesterId, request);
         viewer.openInventory(gui.getInventory());
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Rating GUI
-    // ──────────────────────────────────────────────────────────────────────────
 
     /**
      * Opens the rating GUI for {@code rater} using their stored session.
@@ -72,10 +63,6 @@ public class GUIManager {
     public void removeRatingSession(UUID playerId) {
         ratingSessions.remove(playerId);
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Stats GUI (async load)
-    // ──────────────────────────────────────────────────────────────────────────
 
     /**
      * Fetches stats asynchronously, then opens the stats GUI on the main thread.

@@ -25,6 +25,7 @@ public class TPRateCommand extends SimpleCommandHandler {
             MessageUtil.sendMessage(sender, configManager.getMessage("general.player-only"));
             return true;
         }
+        if (!checkPermission(player, "papertpa.tpa")) return true;
 
         var session = plugin.getGUIManager().getRatingSession(player.getUniqueId());
         if (session == null) {

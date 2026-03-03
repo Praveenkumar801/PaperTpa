@@ -21,7 +21,8 @@ public class TPToggleCommand extends SimpleCommandHandler {
         }
 
         Player player = (Player) sender;
-        
+        if (!checkPermission(player, "papertpa.toggle")) return true;
+
         plugin.getDatabaseManager().areRequestsEnabled(player.getUniqueId()).thenAccept(current -> {
             boolean newValue = !current;
             plugin.getDatabaseManager().setRequestsEnabled(player.getUniqueId(), newValue).thenRun(() -> {

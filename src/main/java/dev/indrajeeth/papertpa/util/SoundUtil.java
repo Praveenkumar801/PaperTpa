@@ -35,7 +35,6 @@ public final class SoundUtil {
         PaperTpa plugin = PaperTpa.getInstance();
         if (plugin == null || player == null) return;
 
-        // Respect global sounds toggle
         if (!plugin.getConfigManager().areSoundsEnabled()) return;
 
         ConfigurationSection section = plugin.getConfigManager()
@@ -54,10 +53,6 @@ public final class SoundUtil {
 
         player.playSound(player.getLocation(), sound, volume, pitch);
     }
-
-    // ──────────────────────────────────────────────────────────────────
-    // Private helpers
-    // ──────────────────────────────────────────────────────────────────
 
     private static Sound parseSound(String name, String eventKey, PaperTpa plugin) {
         try {

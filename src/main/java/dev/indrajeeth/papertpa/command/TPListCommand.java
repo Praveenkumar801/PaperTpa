@@ -26,6 +26,8 @@ public class TPListCommand extends SimpleCommandHandler {
         }
 
         Player player = (Player) sender;
+        if (!checkPermission(player, "papertpa.tpa")) return true;
+
         List<UUID> received = requestManager.getPendingRequestsFor(player.getUniqueId());
         List<UUID> sent = requestManager.getSentRequestsBy(player.getUniqueId());
 

@@ -26,6 +26,7 @@ public class TPAutoCommand extends SimpleCommandHandler {
             MessageUtil.sendMessage(sender, configManager.getMessage("general.player-only"));
             return true;
         }
+        if (!checkPermission(player, "papertpa.auto")) return true;
 
         plugin.getDatabaseManager().isAutoAcceptEnabled(player.getUniqueId())
             .thenAccept(current -> {

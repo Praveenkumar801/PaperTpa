@@ -46,10 +46,6 @@ public class InventoryClickListener implements Listener {
         }
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Request GUI clicks
-    // ──────────────────────────────────────────────────────────────────────────
-
     private void handleRequestClick(Player player, RequestGUI gui, int slot) {
         var cfg    = plugin.getConfigManager().getGuiSection("gui.request");
         int acceptSlot = cfg != null ? cfg.getInt("accept-slot", 11) : 11;
@@ -114,10 +110,6 @@ public class InventoryClickListener implements Listener {
         }
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Rating GUI clicks
-    // ──────────────────────────────────────────────────────────────────────────
-
     private void handleRatingClick(Player player, RatingGUI gui, int slot) {
         RatingSession session = gui.getSession();
         if (!session.getRaterUUID().equals(player.getUniqueId())) return;
@@ -141,7 +133,6 @@ public class InventoryClickListener implements Listener {
             plugin.getGUIManager().removeRatingSession(player.getUniqueId());
 
             // Persist rating (basic stat tracking — full rating table comes later)
-            // For now: log the rating and notify
             Map<String, String> ph = new HashMap<>();
             ph.put("stars",  String.valueOf(session.getStars()));
             ph.put("player", Bukkit.getOfflinePlayer(session.getTargetUUID()).getName() != null

@@ -3,6 +3,8 @@ package dev.indrajeeth.papertpa.command;
 import dev.indrajeeth.papertpa.PaperTpa;
 import dev.indrajeeth.papertpa.manager.ConfigManager;
 import dev.indrajeeth.papertpa.manager.TeleportRequestManager;
+import dev.indrajeeth.papertpa.util.MessageUtil;
+import dev.indrajeeth.papertpa.util.PermissionManager;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -26,7 +28,7 @@ public class SimpleCommandHandler implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        return false; 
+        return false;
     }
 
     @Override
@@ -34,14 +36,22 @@ public class SimpleCommandHandler implements CommandExecutor, TabCompleter {
         return null;
     }
 
+    /**
+     * Checks the permission via LuckPerms (or Bukkit fallback).
+     * Sends the configured "no-permission" message and returns {@code false} if denied.
+     */
+    protected boolean checkPermission(Player player, String node) {
+        if (PermissionManager.hasPermission(player, node)) return true;
+        MessageUtil.sendMessageWithPlaceholders(player,
+                configManager.getPrefix() + configManager.getMessage("general.no-permission"));
+        return false;
+    }
+
     protected List<String> getOnlinePlayerNames(CommandSender sender) {
         List<String> names = new ArrayList<>();
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (sender instanceof Player) {
-                Player p = (Player) sender;
-                if (!player.getUniqueId().equals(p.getUniqueId())) {
-                    names.add(player.getName());
-                }
+            if (sender instanceof Player p) {
+                if (!player.getUniqueId().equals(p.getUniqueId())) names.add(player.getName());
             } else {
                 names.add(player.getName());
             }

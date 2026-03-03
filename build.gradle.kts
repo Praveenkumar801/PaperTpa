@@ -36,6 +36,7 @@ dependencies {
     compileOnly("net.kyori:adventure-text-minimessage:4.17.0")
     compileOnly("net.kyori:adventure-text-serializer-legacy:4.17.0")
     compileOnly("com.github.LoneDev6:API-ItemsAdder:3.6.1")
+    compileOnly("net.luckperms:api:5.4")
 
     implementation("org.xerial:sqlite-jdbc:3.44.1.0")
 }

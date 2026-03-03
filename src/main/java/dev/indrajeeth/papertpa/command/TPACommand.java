@@ -31,6 +31,8 @@ public class TPACommand extends SimpleCommandHandler {
         }
 
         Player player = (Player) sender;
+        if (!checkPermission(player, "papertpa.tpa")) return true;
+
         String targetName = args[0];
         Player target = Bukkit.getPlayer(targetName);
 

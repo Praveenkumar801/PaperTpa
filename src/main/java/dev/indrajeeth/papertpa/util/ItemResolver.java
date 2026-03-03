@@ -64,14 +64,9 @@ public final class ItemResolver {
         return resolve(section, Map.of());
     }
 
-    // ──────────────────────────────────────────────────────────────────
-    // Private helpers
-    // ──────────────────────────────────────────────────────────────────
-
     private static ItemStack resolveBase(ConfigurationSection section) {
         String itemsAdderId = section.getString("itemsadder", "").trim();
 
-        // Prefer ItemsAdder if the plugin is present and a valid id was given
         if (ITEMS_ADDER_PRESENT && !itemsAdderId.isEmpty()) {
             ItemStack ia = resolveItemsAdder(itemsAdderId);
             if (ia != null) {
@@ -82,7 +77,6 @@ public final class ItemResolver {
                             + " — falling back to material.");
         }
 
-        // Vanilla material
         String materialName = section.getString("material", "PAPER").toUpperCase();
         Material material = Material.matchMaterial(materialName);
         if (material == null) {
@@ -93,7 +87,6 @@ public final class ItemResolver {
 
         ItemStack item = new ItemStack(material);
 
-        // Custom Model Data
         int cmd = section.getInt("custom-model-data", 0);
         if (cmd > 0) {
             ItemMeta meta = item.getItemMeta();

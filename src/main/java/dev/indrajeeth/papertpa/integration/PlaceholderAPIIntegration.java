@@ -18,7 +18,7 @@ public class PlaceholderAPIIntegration extends PlaceholderExpansion {
 
     @Override
     public String getIdentifier() {
-        return "easytpa";
+        return "papertpa";
     }
 
     @Override

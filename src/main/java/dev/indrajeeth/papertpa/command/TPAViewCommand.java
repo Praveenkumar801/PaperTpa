@@ -26,6 +26,8 @@ public class TPAViewCommand extends SimpleCommandHandler {
             MessageUtil.sendMessage(sender, configManager.getMessage("general.player-only"));
             return true;
         }
+        if (!checkPermission(player, "papertpa.tpa")) return true;
+
         if (args.length < 1) {
             MessageUtil.sendMessageWithPlaceholders(player,
                     configManager.getPrefix() + "&cUsage: /tpaview <player>");

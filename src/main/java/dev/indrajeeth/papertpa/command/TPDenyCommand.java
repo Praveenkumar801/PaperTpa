@@ -26,7 +26,8 @@ public class TPDenyCommand extends SimpleCommandHandler {
         }
 
         Player player = (Player) sender;
-        
+        if (!checkPermission(player, "papertpa.tpdeny")) return true;
+
         if (args.length == 0) {
             List<UUID> pending = requestManager.getPendingRequestsFor(player.getUniqueId());
             if (pending.isEmpty()) {
