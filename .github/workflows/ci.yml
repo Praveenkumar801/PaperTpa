@@ -3,8 +3,13 @@ name: CI
 on:
   push:
     branches: [main, dev]
+    tags:
+      - "v*"
   pull_request:
     branches: [main, dev]
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -42,21 +47,24 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Run tests with Configuration cache
+      - name: Build with Gradle
         run: ./gradlew clean build --configuration-cache
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: easy-tpa-plugin
-          path: build/libs/*.jar
+          name: PaperTpa
+          path: build/libs/PaperTpa-*.jar
           retention-days: 7
 
-      - name: Test Configuration cache effectiveness
+      - name: Publish to GitHub Releases
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Testing Configuration cache effectiveness..."
-          echo "First build (should be slower):"
-          time ./gradlew clean build --configuration-cache
-          echo "Second build (should be faster with cached configuration):"
-          time ./gradlew build --configuration-cache
+          gh release create ${{ github.ref_name }} \
+            build/libs/PaperTpa-*.jar \
+            --title "PaperTpa ${{ github.ref_name }}" \
+            --generate-notes \
+            --repo ${{ github.repository }}
