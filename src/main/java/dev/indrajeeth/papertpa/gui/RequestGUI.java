@@ -1,6 +1,7 @@
 package dev.indrajeeth.papertpa.gui;
 
 import dev.indrajeeth.papertpa.PaperTpa;
+import dev.indrajeeth.papertpa.model.PlayerStats;
 import dev.indrajeeth.papertpa.model.TPARequest;
 import dev.indrajeeth.papertpa.util.ItemResolver;
 import dev.indrajeeth.papertpa.util.MessageUtil;
@@ -14,13 +15,13 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 
-import java.util.Map;
 import java.util.UUID;
 
 /**
  * GUI shown to the TPA target when they click the "[View Request]" notification.
- * Displays the requester's player head, current coords, and dimension,
- * plus Accept / View Stats / Deny buttons.
+ * Displays the requester's player head with current coords, dimension, trap % and
+ * rating in the lore, plus Accept / Deny buttons.
+ * The former "View Stats" button has been removed; stats are now shown inline.
  */
 public class RequestGUI implements InventoryHolder {
 
@@ -28,7 +29,8 @@ public class RequestGUI implements InventoryHolder {
     private final UUID viewerId;
     private final Inventory inventory;
 
-    public RequestGUI(PaperTpa plugin, Player viewer, UUID requesterId, TPARequest request) {
+    public RequestGUI(PaperTpa plugin, Player viewer, UUID requesterId,
+                      TPARequest request, PlayerStats requesterStats) {
         this.requesterId = requesterId;
         this.viewerId    = viewer.getUniqueId();
 
@@ -46,20 +48,13 @@ public class RequestGUI implements InventoryHolder {
         for (int i = 0; i < size; i++) inventory.setItem(i, filler);
 
         int requesterSlot = cfg != null ? cfg.getInt("requester-slot", 4) : 4;
-        inventory.setItem(requesterSlot, buildRequesterHead(plugin, requesterId, request));
+        inventory.setItem(requesterSlot, buildRequesterHead(plugin, requesterId, request, requesterStats));
 
         int acceptSlot = cfg != null ? cfg.getInt("accept-slot", 11) : 11;
         if (cfg != null) {
             inventory.setItem(acceptSlot, ItemResolver.resolve(cfg.getConfigurationSection("accept-item")));
         } else {
             inventory.setItem(acceptSlot, quickItem(Material.LIME_STAINED_GLASS_PANE, "&aAccept"));
-        }
-
-        int infoSlot = cfg != null ? cfg.getInt("info-slot", 13) : 13;
-        if (cfg != null) {
-            inventory.setItem(infoSlot, ItemResolver.resolve(cfg.getConfigurationSection("info-item")));
-        } else {
-            inventory.setItem(infoSlot, quickItem(Material.PAPER, "&eView Stats"));
         }
 
         int denySlot = cfg != null ? cfg.getInt("deny-slot", 15) : 15;
@@ -70,7 +65,8 @@ public class RequestGUI implements InventoryHolder {
         }
     }
 
-    private static ItemStack buildRequesterHead(PaperTpa plugin, UUID requesterId, TPARequest request) {
+    private static ItemStack buildRequesterHead(PaperTpa plugin, UUID requesterId,
+                                                TPARequest request, PlayerStats stats) {
         Player requester = Bukkit.getPlayer(requesterId);
         ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta meta  = (SkullMeta) skull.getItemMeta();
@@ -96,6 +92,9 @@ public class RequestGUI implements InventoryHolder {
         String dim = getDimensionName(loc.getWorld());
         int x = (int) loc.getX(), y = (int) loc.getY(), z = (int) loc.getZ();
 
+        String ratingStr   = stats.totalRatings > 0 ? String.format("%.1f", stats.averageRating) : "0";
+        String trapStr     = String.format("%.1f", stats.trapPercent);
+
         java.util.List<net.kyori.adventure.text.Component> lore = new java.util.ArrayList<>();
         if (cfg != null) {
             for (String line : cfg.getStringList("lore")) {
@@ -103,13 +102,17 @@ public class RequestGUI implements InventoryHolder {
                            .replace("%y%", String.valueOf(y))
                            .replace("%z%", String.valueOf(z))
                            .replace("%dimension%", dim)
-                           .replace("%world%", loc.getWorld() != null ? loc.getWorld().getName() : "?");
+                           .replace("%world%", loc.getWorld() != null ? loc.getWorld().getName() : "?")
+                           .replace("%tpa_trap_percent%", trapStr)
+                           .replace("%tpa_rating%", ratingStr);
                 lore.add(MessageUtil.toComponent(line));
             }
         }
         if (lore.isEmpty()) {
             lore.add(MessageUtil.toComponent("&7Location: &f" + x + ", " + y + ", " + z));
             lore.add(MessageUtil.toComponent("&7Dimension: &f" + dim));
+            lore.add(MessageUtil.toComponent("&7Trap %: &f" + trapStr + "%"));
+            lore.add(MessageUtil.toComponent("&7Rating: &f" + ratingStr + " \u2B50"));
         }
         meta.lore(lore);
         skull.setItemMeta(meta);

@@ -22,9 +22,9 @@ public class GUIManager {
     }
 
     /**
-     * Opens the TPA request GUI for {@code viewer}, showing info about
-     * the incoming request from {@code requesterId}.
-     * Must be called on the main thread.
+     * Fetches the requester's stats asynchronously, then opens the TPA request GUI
+     * for {@code viewer} on the main thread.
+     * Must be called on the main thread (used as a trigger only).
      */
     public void openRequestGUI(Player viewer, UUID requesterId) {
         TPARequest request = plugin.getTeleportManager().getRequest(requesterId);
@@ -33,8 +33,14 @@ public class GUIManager {
                     + plugin.getConfigManager().getMessage("requests.gui-not-active"));
             return;
         }
-        RequestGUI gui = new RequestGUI(plugin, viewer, requesterId, request);
-        viewer.openInventory(gui.getInventory());
+        plugin.getDatabaseManager().getPlayerStats(requesterId).thenAccept(stats ->
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (viewer.isOnline()) {
+                    RequestGUI gui = new RequestGUI(plugin, viewer, requesterId, request, stats);
+                    viewer.openInventory(gui.getInventory());
+                }
+            })
+        );
     }
 
     /**

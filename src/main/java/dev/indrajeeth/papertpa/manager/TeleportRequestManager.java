@@ -30,7 +30,9 @@ public class TeleportRequestManager {
     /** Guards against scheduling duplicate rating prompts for the same player. */
     private final Set<UUID> pendingRatingScheduled = ConcurrentHashMap.newKeySet();
 
-    public TeleportRequestManager(PaperTpa plugin, DatabaseManager database) {
+    /** Extra grace period to retain expired cooldown entries before purging. */
+    private static final long COOLDOWN_GRACE_PERIOD_MS = 60_000L;
+
         this.plugin   = plugin;
         this.database = database;
     }
@@ -90,7 +92,6 @@ public class TeleportRequestManager {
             return CompletableFuture.completedFuture(false);
         }
 
-        // ── FIX: atomic compare-and-remove prevents double-accept race condition ──
         if (!activeRequests.remove(requesterId, request)) {
             return CompletableFuture.completedFuture(false);
         }
@@ -138,7 +139,6 @@ public class TeleportRequestManager {
         if (request == null || !request.getTargetId().equals(denier.getUniqueId())) {
             return CompletableFuture.completedFuture(false);
         }
-        // ── FIX: atomic compare-and-remove prevents double-deny race condition ──
         if (!activeRequests.remove(requesterId, request)) {
             return CompletableFuture.completedFuture(false);
         }
@@ -156,7 +156,6 @@ public class TeleportRequestManager {
 
         int delay = plugin.getConfigManager().getTeleportDelay();
 
-        // If teleport-delay is 0, check tp-idle setting
         if (delay == 0 && plugin.getConfigManager().isTpIdleEnabled()
                 && !player.hasPermission("papertpa.delay.bypass")) {
             int idleTime = plugin.getConfigManager().getTpIdleTime();
@@ -225,7 +224,6 @@ public class TeleportRequestManager {
         });
     }
 
-    // ── FIX: dangerous material whitelist for safe-location checks ────────────
     private static final Set<org.bukkit.Material> DANGEROUS_MATERIALS = Set.of(
             org.bukkit.Material.LAVA,
             org.bukkit.Material.FIRE,
@@ -239,7 +237,6 @@ public class TeleportRequestManager {
 
     private boolean isSafeLocation(Location loc) {
         if (loc.getWorld() == null) return false;
-        // Void check — below world minimum height is instant death
         if (loc.getY() < loc.getWorld().getMinHeight()) return false;
 
         org.bukkit.block.Block feet   = loc.getBlock();
@@ -264,8 +261,6 @@ public class TeleportRequestManager {
         int delaySec = plugin.getConfigManager().getRatingDelay();
         if (delaySec <= 0) return;
 
-        // Prevent duplicate rating prompts if the player teleports more than once
-        // before the first prompt fires.
         if (!pendingRatingScheduled.add(playerId)) return;
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
@@ -308,8 +303,6 @@ public class TeleportRequestManager {
                                             MessageUtil.toComponent(
                                                     plugin.getConfigManager().getMessage("rating.click-to-rate-hover")))))
                             .build();
-                    // Remove the guard right before sending so any subsequent teleport
-                    // (after this prompt is delivered) can schedule a fresh prompt.
                     pendingRatingScheduled.remove(playerId);
                     r.sendMessage(clickable);
                     SoundUtil.play(r, "rating-prompt");
@@ -405,6 +398,8 @@ public class TeleportRequestManager {
             }
             return false;
         });
+        long cooldownMs = plugin.getConfigManager().getCooldown() * 1000L;
+        cooldowns.entrySet().removeIf(e -> now - e.getValue() > cooldownMs + COOLDOWN_GRACE_PERIOD_MS);
     }
 
     public void cancelTeleport(UUID playerId) {
@@ -417,8 +412,8 @@ public class TeleportRequestManager {
         pendingTeleports.remove(playerId);
     }
 
-    public void performTeleportDirect(Player player, Location dest) {
-        performTeleport(player, dest);
+    void cleanupRequesterTarget(UUID playerId) {
+        requesterToTarget.remove(playerId);
     }
 
     public static class PendingTeleport {
@@ -439,10 +434,10 @@ public class TeleportRequestManager {
         public void tick() {
             if (!player.isOnline()) { cancel(); return; }
 
+            PaperTpa plugin = PaperTpa.getInstance();
             Location cur = player.getLocation();
             if (cur.getWorld() != startLocation.getWorld()
                     || cur.distance(startLocation) > 0.5) {
-                PaperTpa plugin = PaperTpa.getInstance();
                 MessageUtil.sendMessageWithPlaceholders(player,
                         plugin.getConfigManager().getPrefix()
                         + plugin.getConfigManager().getMessage("teleport.cancelled-moved"));
@@ -450,7 +445,6 @@ public class TeleportRequestManager {
                 return;
             }
 
-            PaperTpa plugin = PaperTpa.getInstance();
             if (remainingSeconds > 0) {
                 Map<String, String> ph = new HashMap<>();
                 ph.put("time", String.valueOf(remainingSeconds));
@@ -468,12 +462,14 @@ public class TeleportRequestManager {
             if (task != null) task.cancel();
             TeleportRequestManager mgr = PaperTpa.getInstance().getTeleportManager();
             mgr.removePendingTeleport(player.getUniqueId());
-            mgr.performTeleportDirect(player, destination);
+            mgr.performTeleport(player, destination);
         }
 
         public void cancel() {
             if (task != null) task.cancel();
-            PaperTpa.getInstance().getTeleportManager().removePendingTeleport(player.getUniqueId());
+            TeleportRequestManager mgr = PaperTpa.getInstance().getTeleportManager();
+            mgr.removePendingTeleport(player.getUniqueId());
+            mgr.cleanupRequesterTarget(player.getUniqueId());
             if (player.isOnline()) {
                 PaperTpa plugin = PaperTpa.getInstance();
                 MessageUtil.sendMessageWithPlaceholders(player,

@@ -76,17 +76,21 @@ public class StatsGUI implements InventoryHolder {
 
         java.util.List<net.kyori.adventure.text.Component> lore = new java.util.ArrayList<>();
         if (itemCfg != null) {
+            String ratingStr = stats.totalRatings > 0
+                    ? String.format("%.1f", stats.averageRating) : "0";
+            String trapStr   = String.format("%.1f", stats.trapPercent);
+            String tierStr   = getReputationTier(stats);
             for (String line : itemCfg.getStringList("lore")) {
                 line = line
-                    .replace("%player%",        name)
-                    .replace("%tpa_sent%",       String.valueOf(stats.totalSent))
-                    .replace("%tpa_received%",   String.valueOf(stats.totalReceived))
-                    .replace("%tpa_accepted%",   String.valueOf(stats.totalAccepted))
-                    .replace("%tpa_denied%",     String.valueOf(stats.totalDenied))
-                    .replace("%tpa_rating%",     "N/A")
-                    .replace("%tpa_trap_percent%", "N/A")
-                    .replace("%tpa_reputation_tier%", "&7Neutral")
-                    .replace("%tpa_total_ratings%",  "0");
+                    .replace("%player%",               name)
+                    .replace("%tpa_sent%",              String.valueOf(stats.totalSent))
+                    .replace("%tpa_received%",          String.valueOf(stats.totalReceived))
+                    .replace("%tpa_accepted%",          String.valueOf(stats.totalAccepted))
+                    .replace("%tpa_denied%",            String.valueOf(stats.totalDenied))
+                    .replace("%tpa_rating%",            ratingStr)
+                    .replace("%tpa_trap_percent%",      trapStr)
+                    .replace("%tpa_reputation_tier%",   tierStr)
+                    .replace("%tpa_total_ratings%",     String.valueOf(stats.totalRatings));
                 lore.add(MessageUtil.toComponent(line));
             }
         }
@@ -99,6 +103,13 @@ public class StatsGUI implements InventoryHolder {
         meta.lore(lore);
         skull.setItemMeta(meta);
         return skull;
+    }
+
+    private static String getReputationTier(dev.indrajeeth.papertpa.model.PlayerStats stats) {
+        if (stats.totalRatings == 0) return "&7Neutral";
+        if (stats.trapPercent >= 30.0 || stats.averageRating < 2.0) return "&cSuspicious";
+        if (stats.averageRating >= 4.0 && stats.trapPercent < 5.0)  return "&aTrusted";
+        return "&eNeutral";
     }
 
     @Override

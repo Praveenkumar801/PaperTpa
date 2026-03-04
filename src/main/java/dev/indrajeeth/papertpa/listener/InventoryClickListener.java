@@ -39,18 +39,15 @@ public class InventoryClickListener implements Listener {
         } else if (holder instanceof RatingGUI gui) {
             event.setCancelled(true);
             handleRatingClick(player, gui, event.getRawSlot());
-        }
-        // StatsGUI is view-only — just cancel clicks to prevent item theft
-        else if (holder instanceof dev.indrajeeth.papertpa.gui.StatsGUI) {
+        } else if (holder instanceof dev.indrajeeth.papertpa.gui.StatsGUI) {
             event.setCancelled(true);
         }
     }
 
     private void handleRequestClick(Player player, RequestGUI gui, int slot) {
-        var cfg    = plugin.getConfigManager().getGuiSection("gui.request");
+        var cfg = plugin.getConfigManager().getGuiSection("gui.request");
         int acceptSlot = cfg != null ? cfg.getInt("accept-slot", 11) : 11;
         int denySlot   = cfg != null ? cfg.getInt("deny-slot",   15) : 15;
-        int infoSlot   = cfg != null ? cfg.getInt("info-slot",   13) : 13;
 
         UUID requesterId = gui.getRequesterId();
 
@@ -103,10 +100,6 @@ public class InventoryClickListener implements Listener {
                     }
                 })
             );
-
-        } else if (slot == infoSlot) {
-            player.closeInventory();
-            plugin.getGUIManager().openStatsGUI(player, requesterId);
         }
     }
 
@@ -132,20 +125,17 @@ public class InventoryClickListener implements Listener {
             player.closeInventory();
             plugin.getGUIManager().removeRatingSession(player.getUniqueId());
 
-            // Persist rating (basic stat tracking — full rating table comes later)
+            plugin.getDatabaseManager().addRating(
+                    session.getTargetUUID(), session.getStars(), session.isTrapReport());
+
             Map<String, String> ph = new HashMap<>();
             ph.put("stars",  String.valueOf(session.getStars()));
-            ph.put("player", Bukkit.getOfflinePlayer(session.getTargetUUID()).getName() != null
-                    ? Bukkit.getOfflinePlayer(session.getTargetUUID()).getName()
-                    : session.getTargetUUID().toString());
+            String targetName = Bukkit.getOfflinePlayer(session.getTargetUUID()).getName();
+            ph.put("player", targetName != null ? targetName : session.getTargetUUID().toString());
             MessageUtil.sendMessageWithPlaceholders(player,
                     plugin.getConfigManager().getPrefix()
                     + plugin.getConfigManager().getMessage("rating.submitted", ph));
             SoundUtil.play(player, "request-accepted");
-
-            plugin.getLogger().info("[Rating] " + player.getName() + " rated "
-                    + ph.get("player") + " " + session.getStars() + " star(s)"
-                    + (session.isTrapReport() ? " [TRAP REPORTED]" : ""));
         }
     }
 }

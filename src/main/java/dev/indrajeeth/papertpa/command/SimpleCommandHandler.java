@@ -12,8 +12,8 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class SimpleCommandHandler implements CommandExecutor, TabCompleter {
     protected final PaperTpa plugin;
@@ -48,15 +48,11 @@ public class SimpleCommandHandler implements CommandExecutor, TabCompleter {
     }
 
     protected List<String> getOnlinePlayerNames(CommandSender sender) {
-        List<String> names = new ArrayList<>();
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (sender instanceof Player p) {
-                if (!player.getUniqueId().equals(p.getUniqueId())) names.add(player.getName());
-            } else {
-                names.add(player.getName());
-            }
-        }
-        return names;
+        UUID senderUuid = sender instanceof Player p ? p.getUniqueId() : null;
+        return Bukkit.getOnlinePlayers().stream()
+                .filter(p -> senderUuid == null || !p.getUniqueId().equals(senderUuid))
+                .map(Player::getName)
+                .collect(java.util.stream.Collectors.toList());
     }
 }
 

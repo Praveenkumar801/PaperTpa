@@ -1,6 +1,5 @@
 package dev.indrajeeth.papertpa.command;
 
-import com.mojang.brigadier.CommandDispatcher;
 import dev.indrajeeth.papertpa.PaperTpa;
 import dev.indrajeeth.papertpa.util.MessageUtil;
 import org.bukkit.Bukkit;
@@ -50,17 +49,12 @@ public class TPAcceptCommand extends SimpleCommandHandler {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (args.length == 1 && sender instanceof Player) {
-            Player player = (Player) sender;
-            List<UUID> pending = requestManager.getPendingRequestsFor(player.getUniqueId());
-            List<String> names = new java.util.ArrayList<>();
-            for (UUID requesterId : pending) {
-                Player requester = Bukkit.getPlayer(requesterId);
-                if (requester != null) {
-                    names.add(requester.getName());
-                }
-            }
-            return names;
+        if (args.length == 1 && sender instanceof Player player) {
+            return requestManager.getPendingRequestsFor(player.getUniqueId()).stream()
+                    .map(Bukkit::getPlayer)
+                    .filter(java.util.Objects::nonNull)
+                    .map(Player::getName)
+                    .collect(java.util.stream.Collectors.toList());
         }
         return null;
     }
@@ -77,10 +71,8 @@ public class TPAcceptCommand extends SimpleCommandHandler {
                     placeholders.put("player", requester.getName());
                     MessageUtil.sendMessageWithPlaceholders(accepter, configManager.getPrefix() + configManager.getMessage("requests.accepted-target", placeholders));
 
-                    if (configManager.areSoundsEnabled()) {
-                        dev.indrajeeth.papertpa.util.SoundUtil.play(accepter, "request-accepted");
-                        dev.indrajeeth.papertpa.util.SoundUtil.play(requester, "request-accepted");
-                    }
+                    dev.indrajeeth.papertpa.util.SoundUtil.play(accepter, "request-accepted");
+                    dev.indrajeeth.papertpa.util.SoundUtil.play(requester, "request-accepted");
                 } else {
                     MessageUtil.sendMessageWithPlaceholders(accepter, configManager.getPrefix() + configManager.getMessage("requests.no-pending-request"));
                 }
@@ -88,6 +80,5 @@ public class TPAcceptCommand extends SimpleCommandHandler {
         });
     }
 
-    public void register(CommandDispatcher<CommandSender> dispatcher) {
-    }
 }
+
