@@ -8,7 +8,6 @@ import dev.indrajeeth.papertpa.util.SoundUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -28,6 +27,8 @@ public class TeleportRequestManager {
     private final Map<UUID, Long> cooldowns = new ConcurrentHashMap<>();
     private final Map<UUID, UUID> requesterToTarget = new ConcurrentHashMap<>();
     private final Map<UUID, Long> immunePlayers = new ConcurrentHashMap<>();
+    /** Guards against scheduling duplicate rating prompts for the same player. */
+    private final Set<UUID> pendingRatingScheduled = ConcurrentHashMap.newKeySet();
 
     public TeleportRequestManager(PaperTpa plugin, DatabaseManager database) {
         this.plugin   = plugin;
@@ -158,7 +159,8 @@ public class TeleportRequestManager {
         // If teleport-delay is 0, check tp-idle setting
         if (delay == 0 && plugin.getConfigManager().isTpIdleEnabled()
                 && !player.hasPermission("papertpa.delay.bypass")) {
-            delay = plugin.getConfigManager().getTpIdleTime();
+            int idleTime = plugin.getConfigManager().getTpIdleTime();
+            if (idleTime > 0) delay = idleTime;
         }
 
         if (delay > 0 && !player.hasPermission("papertpa.delay.bypass")) {
@@ -262,15 +264,28 @@ public class TeleportRequestManager {
         int delaySec = plugin.getConfigManager().getRatingDelay();
         if (delaySec <= 0) return;
 
+        // Prevent duplicate rating prompts if the player teleports more than once
+        // before the first prompt fires.
+        if (!pendingRatingScheduled.add(playerId)) return;
+
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             Player rater = Bukkit.getPlayer(playerId);
-            if (rater == null || !rater.isOnline()) return;
+            if (rater == null || !rater.isOnline()) {
+                pendingRatingScheduled.remove(playerId);
+                return;
+            }
 
             database.isNotificationEnabled(playerId).thenAccept(notifEnabled -> {
-                if (!notifEnabled) return;
+                if (!notifEnabled) {
+                    pendingRatingScheduled.remove(playerId);
+                    return;
+                }
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     Player r = Bukkit.getPlayer(playerId);
-                    if (r == null || !r.isOnline()) return;
+                    if (r == null || !r.isOnline()) {
+                        pendingRatingScheduled.remove(playerId);
+                        return;
+                    }
 
                     String targetName = Optional.ofNullable(Bukkit.getPlayer(targetId))
                             .map(Player::getName)
@@ -280,24 +295,70 @@ public class TeleportRequestManager {
                     RatingSession session = new RatingSession(playerId, targetId, System.currentTimeMillis());
                     plugin.getGUIManager().addRatingSession(playerId, session);
 
+                    String rateButtonText = plugin.getConfigManager().getMessage("rating.rate-button");
                     Component prompt = MessageUtil.toComponent(
                             plugin.getConfigManager().getPrefix()
                             + plugin.getConfigManager().getMessage("rating.prompt"));
                     Component clickable = Component.text()
                             .append(prompt)
                             .append(Component.text(" "))
-                            .append(Component.text("[Rate]")
-                                    .color(NamedTextColor.YELLOW)
+                            .append(MessageUtil.toComponent(rateButtonText)
                                     .clickEvent(ClickEvent.runCommand("/tprate " + targetName))
                                     .hoverEvent(HoverEvent.showText(
                                             MessageUtil.toComponent(
                                                     plugin.getConfigManager().getMessage("rating.click-to-rate-hover")))))
                             .build();
+                    // Remove the guard right before sending so any subsequent teleport
+                    // (after this prompt is delivered) can schedule a fresh prompt.
+                    pendingRatingScheduled.remove(playerId);
                     r.sendMessage(clickable);
                     SoundUtil.play(r, "rating-prompt");
                 });
             });
         }, delaySec * 20L);
+    }
+
+    /**
+     * Grants the player post-teleport immunity for the configured duration.
+     * While immune, entity damage events are cancelled by {@link dev.indrajeeth.papertpa.listener.ImmunityListener}.
+     */
+    public void applyImmunity(Player player) {
+        int immunitySeconds = plugin.getConfigManager().getTpImmunity();
+        if (immunitySeconds <= 0) return;
+
+        UUID playerId = player.getUniqueId();
+        long expiry = System.currentTimeMillis() + (immunitySeconds * 1000L);
+        immunePlayers.put(playerId, expiry);
+
+        Map<String, String> ph = new HashMap<>();
+        ph.put("time", String.valueOf(immunitySeconds));
+        MessageUtil.sendMessageWithPlaceholders(player,
+                plugin.getConfigManager().getPrefix()
+                + plugin.getConfigManager().getMessage("immunity.applied", ph));
+
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            Long stored = immunePlayers.get(playerId);
+            if (stored != null && stored <= System.currentTimeMillis()) {
+                immunePlayers.remove(playerId);
+                Player p = Bukkit.getPlayer(playerId);
+                if (p != null && p.isOnline()) {
+                    MessageUtil.sendMessageWithPlaceholders(p,
+                            plugin.getConfigManager().getPrefix()
+                            + plugin.getConfigManager().getMessage("immunity.expired"));
+                }
+            }
+        }, immunitySeconds * 20L);
+    }
+
+    /** Returns true if the player currently has post-teleport immunity. */
+    public boolean isImmune(UUID playerId) {
+        Long expiry = immunePlayers.get(playerId);
+        if (expiry == null) return false;
+        if (System.currentTimeMillis() > expiry) {
+            immunePlayers.remove(playerId);
+            return false;
+        }
+        return true;
     }
 
     /** Returns the TPARequest sent by requesterId, or null if none. */

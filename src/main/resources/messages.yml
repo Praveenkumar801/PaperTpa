@@ -20,6 +20,12 @@ commands:
   tpdeny:
     usage: "&cUsage: /tpdeny [player]"
 
+  tpaview:
+    usage: "&cUsage: /tpaview <player>"
+
+  tpstats:
+    usage: "&cUsage: /tpstats [player]"
+
 # Request messages
 requests:
   sent: "&aYou have sent a teleport request to &e%player%&a."
@@ -54,11 +60,21 @@ teleport:
 cooldown:
   message: "&cYou must wait &e%time% &cseconds before sending another request!"
 
-# Toggle messages
+# Toggle messages (used by /tptoggle)
 toggle:
   enabled: "&aTeleport requests have been &2enabled&a."
   disabled: "&cTeleport requests have been &4disabled&c."
   target-has-tp-disabled: "&c%player% has teleport requests disabled."
+
+# Notification toggle messages (used by /tpnotify)
+notify:
+  enabled: "&aPost-teleport rating notifications &2enabled&a."
+  disabled: "&cPost-teleport rating notifications &4disabled&c."
+
+# Auto-accept toggle messages (used by /tpauto)
+auto:
+  enabled: "&aAuto-accept has been &2enabled&a. All incoming requests will be accepted automatically."
+  disabled: "&cAuto-accept has been &4disabled&c."
 
 # Interactive UI messages
 ui:
@@ -85,12 +101,14 @@ admin:
 
 # Post-teleport immunity messages
 immunity:
-  applied: "&aYou have been granted &e%time%s &aof post-teleport immunity."
+  applied: "&aYou have been granted &e%time% seconds &aof post-teleport immunity."
   expired: "&7Your post-teleport immunity has expired."
 
 # Rating messages
 rating:
-  prompt: "&eHow was your teleport experience? "
+  prompt: "&eHow was your teleport experience?"
+  rate-button: "&e[Rate]"
   click-to-rate-hover: "&eClick to open the rating GUI"
   submitted: "&aYou rated &e%player% &a%stars% star(s). Thank you!"
   expired: "&cYour rating session has expired."
+

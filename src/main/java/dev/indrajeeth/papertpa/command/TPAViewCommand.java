@@ -30,7 +30,7 @@ public class TPAViewCommand extends SimpleCommandHandler {
 
         if (args.length < 1) {
             MessageUtil.sendMessageWithPlaceholders(player,
-                    configManager.getPrefix() + "&cUsage: /tpaview <player>");
+                    configManager.getPrefix() + configManager.getMessage("commands.tpaview.usage"));
             return true;
         }
 

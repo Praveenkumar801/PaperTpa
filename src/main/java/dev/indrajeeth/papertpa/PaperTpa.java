@@ -2,6 +2,7 @@ package dev.indrajeeth.papertpa;
 
 import dev.indrajeeth.papertpa.gui.GUIManager;
 import dev.indrajeeth.papertpa.integration.PlaceholderAPIIntegration;
+import dev.indrajeeth.papertpa.listener.ImmunityListener;
 import dev.indrajeeth.papertpa.listener.InventoryClickListener;
 import dev.indrajeeth.papertpa.manager.CommandManager;
 import dev.indrajeeth.papertpa.manager.ConfigManager;
@@ -57,6 +58,7 @@ public class PaperTpa extends JavaPlugin {
         commandManager.registerCommands();
 
         Bukkit.getPluginManager().registerEvents(new InventoryClickListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new ImmunityListener(this), this);
 
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             placeholderIntegration = new PlaceholderAPIIntegration(this);

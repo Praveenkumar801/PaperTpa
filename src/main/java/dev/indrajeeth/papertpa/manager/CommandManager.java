@@ -22,6 +22,7 @@ public class CommandManager {
         register("tpnotify",  new TPNotifyCommand(plugin));
         register("tpauto",    new TPAutoCommand(plugin));
         register("tprate",    new TPRateCommand(plugin));
+        register("tpstats",   new TPStatsCommand(plugin));
         register("papertpa",  new PaperTpaAdminCommand(plugin));
 
         plugin.getLogger().info("Registered all commands.");
