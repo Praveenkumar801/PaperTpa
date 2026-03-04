@@ -111,7 +111,7 @@ public class RequestGUI implements InventoryHolder {
         if (lore.isEmpty()) {
             lore.add(MessageUtil.toComponent("&7Location: &f" + x + ", " + y + ", " + z));
             lore.add(MessageUtil.toComponent("&7Dimension: &f" + dim));
-            lore.add(MessageUtil.toComponent("&7Trap %%: &f" + trapStr + "%"));
+            lore.add(MessageUtil.toComponent("&7Trap %: &f" + trapStr + "%"));
             lore.add(MessageUtil.toComponent("&7Rating: &f" + ratingStr + " \u2B50"));
         }
         meta.lore(lore);

@@ -162,6 +162,10 @@ public final class BrigadierRegistrar {
 
     private void delegate(org.bukkit.command.CommandSender sender, String name, String[] args) {
         PluginCommand cmd = plugin.getCommand(name);
-        if (cmd != null) cmd.execute(sender, name, args);
+        if (cmd != null) {
+            cmd.execute(sender, name, args);
+        } else {
+            plugin.getLogger().warning("[BrigadierRegistrar] Command not found: /" + name);
+        }
     }
 }

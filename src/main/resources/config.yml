@@ -125,7 +125,7 @@ gui:
       lore:
         - "&7Location: &f%x%, %y%, %z%"
         - "&7Dimension: &f%dimension%"
-        - "&7Trap %%: &f%tpa_trap_percent%%"
+        - "&7Trap %: &f%tpa_trap_percent%%"
         - "&7Rating: &f%tpa_rating% ⭐"
     accept-item:
       # Vanilla material fallback
@@ -174,7 +174,7 @@ gui:
         - "&7Received: &f%tpa_received%"
         - "&7Accepted: &f%tpa_accepted%"
         - "&7Denied: &f%tpa_denied%"
-        - "&7Trap %%: &f%tpa_trap_percent%%"
+        - "&7Trap %: &f%tpa_trap_percent%%"
         - "&7Rating: &f%tpa_rating% ⭐"
         - "&7Total Ratings: &f%tpa_total_ratings%"
         - "&7Reputation: %tpa_reputation_tier%"
