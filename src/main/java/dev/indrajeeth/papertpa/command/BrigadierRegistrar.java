@@ -76,7 +76,7 @@ public final class BrigadierRegistrar {
                                     plugin.getTeleportManager()
                                         .getPendingRequestsFor(player.getUniqueId()).stream()
                                         .map(Bukkit::getPlayer)
-                                        .filter(p -> p != null)
+                                        .filter(java.util.Objects::nonNull)
                                         .map(Player::getName)
                                         .filter(nm -> nm.toLowerCase().startsWith(prefix))
                                         .forEach(builder::suggest);
@@ -103,7 +103,7 @@ public final class BrigadierRegistrar {
                                 plugin.getTeleportManager()
                                     .getPendingRequestsFor(player.getUniqueId()).stream()
                                     .map(Bukkit::getPlayer)
-                                    .filter(p -> p != null)
+                                    .filter(java.util.Objects::nonNull)
                                     .map(Player::getName)
                                     .filter(nm -> nm.toLowerCase().startsWith(prefix))
                                     .forEach(builder::suggest);

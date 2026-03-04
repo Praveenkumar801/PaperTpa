@@ -175,13 +175,11 @@ public class DatabaseManager {
      * Column name is validated against a whitelist to prevent SQL injection.
      */
     public CompletableFuture<Void> incrementStat(UUID uuid, String column) {
-        // ── Security: reject any column not in the whitelist ─────────────────
         if (!VALID_STAT_COLUMNS.contains(column)) {
             plugin.getLogger().severe("[DB] Blocked invalid stat column: '" + column + "'");
             return CompletableFuture.completedFuture(null);
         }
         return runAsync(() -> {
-            // column is whitelisted — safe to interpolate
             String sql = "INSERT INTO players (uuid, " + column + ") VALUES (?,1) "
                        + "ON CONFLICT(uuid) DO UPDATE SET " + column + "=" + column + "+1";
             try (PreparedStatement ps = getConnection().prepareStatement(sql)) {

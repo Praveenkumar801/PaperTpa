@@ -1,6 +1,5 @@
 package dev.indrajeeth.papertpa.command;
 
-import com.mojang.brigadier.CommandDispatcher;
 import dev.indrajeeth.papertpa.PaperTpa;
 import dev.indrajeeth.papertpa.util.MessageUtil;
 import net.kyori.adventure.text.Component;
@@ -93,9 +92,6 @@ public class TPACommand extends SimpleCommandHandler {
             return getOnlinePlayerNames(sender);
         }
         return null;
-    }
-
-    public void register(CommandDispatcher<CommandSender> dispatcher) {
     }
 
     private void sendInteractiveRequest(Player target, Player requester) {

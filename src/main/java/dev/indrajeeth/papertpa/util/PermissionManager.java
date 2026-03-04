@@ -16,20 +16,6 @@ import java.util.logging.Level;
  * more reliable than Bukkit's {@code Player#hasPermission} (avoids attachment
  * priority issues and ensures the LuckPerms calculated value is always used).
  * Falls back to {@code Player#hasPermission} if LuckPerms is not installed.
- *
- * <h3>Permission nodes defined by PaperTpa</h3>
- * <pre>
- *  papertpa.tpa             — send, cancel, list, view, notify, rate requests  (default: true)
- *  papertpa.tpaccept        — accept incoming requests                          (default: true)
- *  papertpa.tpdeny          — deny  incoming requests                           (default: true)
- *  papertpa.toggle          — /tptoggle (disable receiving requests)            (default: true)
- *  papertpa.auto            — /tpauto   (auto-accept all requests)              (default: true)
- *  papertpa.admin           — /papertpa reload                                  (default: op)
- *  papertpa.bypass          — bypass targets that have requests disabled        (default: op)
- *  papertpa.cooldown.bypass — skip the send-cooldown                            (default: op)
- *  papertpa.delay.bypass    — skip the warmup countdown                         (default: op)
- *  papertpa.*               — all of the above                                  (default: op)
- * </pre>
  */
 public final class PermissionManager {
 
@@ -37,10 +23,7 @@ public final class PermissionManager {
 
     private PermissionManager() {}
 
-    /**
-     * Called once during {@code onEnable}.
-     * Attempts to obtain the LuckPerms API instance; silently ignores if unavailable.
-     */
+    /** Attempts to bind the LuckPerms API on startup; no-op if unavailable. */
     public static void initialize(PaperTpa plugin) {
         if (plugin.getServer().getPluginManager().getPlugin("LuckPerms") != null) {
             try {
@@ -56,19 +39,7 @@ public final class PermissionManager {
         }
     }
 
-    /**
-     * Returns {@code true} if the player holds the given permission node.
-     *
-     * <p>When LuckPerms is active the check goes through its cached permission
-     * data so the result always reflects the player's current LuckPerms state.
-     * If LuckPerms returns {@link Tristate#UNDEFINED} (no explicit entry found)
-     * the method falls back to Bukkit's {@code hasPermission}, which also
-     * respects the {@code default:} values declared in {@code plugin.yml}.
-     *
-     * @param player     the online player to check
-     * @param permission the fully-qualified permission node
-     * @return {@code true} if the player has the permission
-     */
+    /** Returns {@code true} if the player holds the given permission node. */
     public static boolean hasPermission(Player player, String permission) {
         if (luckPerms != null) {
             try {
@@ -96,10 +67,5 @@ public final class PermissionManager {
                 PaperTpa.getInstance().getConfigManager().getPrefix()
                 + PaperTpa.getInstance().getConfigManager().getMessage("general.no-permission"));
         return false;
-    }
-
-    /** Returns {@code true} if the LuckPerms API was successfully loaded. */
-    public static boolean isLuckPermsActive() {
-        return luckPerms != null;
     }
 }

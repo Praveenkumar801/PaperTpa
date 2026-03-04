@@ -6,9 +6,6 @@ import dev.indrajeeth.papertpa.manager.TeleportRequestManager;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
-import java.util.List;
-import java.util.UUID;
-
 public class PlaceholderAPIIntegration extends PlaceholderExpansion {
     private final PaperTpa plugin;
 
@@ -46,12 +43,10 @@ public class PlaceholderAPIIntegration extends PlaceholderExpansion {
 
         switch (identifier.toLowerCase()) {
             case "pending_requests_count":
-                List<UUID> pending = manager.getPendingRequestsFor(player.getUniqueId());
-                return String.valueOf(pending.size());
+                return String.valueOf(manager.getPendingRequestsFor(player.getUniqueId()).size());
 
             case "sent_requests_count":
-                List<UUID> sent = manager.getSentRequestsBy(player.getUniqueId());
-                return String.valueOf(sent.size());
+                return String.valueOf(manager.getSentRequestsBy(player.getUniqueId()).size());
 
             case "has_pending_requests":
                 return manager.getPendingRequestsFor(player.getUniqueId()).isEmpty() ? "false" : "true";

@@ -1,6 +1,5 @@
 package dev.indrajeeth.papertpa.command;
 
-import com.mojang.brigadier.CommandDispatcher;
 import dev.indrajeeth.papertpa.PaperTpa;
 import dev.indrajeeth.papertpa.util.MessageUtil;
 import org.bukkit.Bukkit;
@@ -58,6 +57,5 @@ public class TPListCommand extends SimpleCommandHandler {
         return true;
     }
 
-    public void register(CommandDispatcher<CommandSender> dispatcher) {
-    }
 }
+

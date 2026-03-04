@@ -125,6 +125,8 @@ gui:
       lore:
         - "&7Location: &f%x%, %y%, %z%"
         - "&7Dimension: &f%dimension%"
+        - "&7Trap %%: &f%tpa_trap_percent%%"
+        - "&7Rating: &f%tpa_rating% ⭐"
     accept-item:
       # Vanilla material fallback
       material: LIME_STAINED_GLASS_PANE
