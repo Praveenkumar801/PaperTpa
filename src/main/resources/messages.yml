@@ -110,8 +110,8 @@ gui:
     neutral: "&eNeutral"
   # ON / OFF state labels substituted for %state% in the trap-report toggle item
   state:
-    on: "&cON"
-    off: "&aOFF"
+    "on": "&cON"
+    "off": "&aOFF"
   # Request GUI (shown to the TPA target)
   request:
     head-name: "&e%player%"
