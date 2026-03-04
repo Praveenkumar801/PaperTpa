@@ -109,10 +109,20 @@ public class RequestGUI implements InventoryHolder {
             }
         }
         if (lore.isEmpty()) {
-            lore.add(MessageUtil.toComponent("&7Location: &f" + x + ", " + y + ", " + z));
-            lore.add(MessageUtil.toComponent("&7Dimension: &f" + dim));
-            lore.add(MessageUtil.toComponent("&7Trap %: &f" + trapStr + "%"));
-            lore.add(MessageUtil.toComponent("&7Rating: &f" + ratingStr + " \u2B50"));
+            lore.add(MessageUtil.toComponent(
+                    plugin.getConfigManager().getMessage("gui.fallback.request.location",
+                            java.util.Map.of("x", String.valueOf(x),
+                                             "y", String.valueOf(y),
+                                             "z", String.valueOf(z)))));
+            lore.add(MessageUtil.toComponent(
+                    plugin.getConfigManager().getMessage("gui.fallback.request.dimension",
+                            java.util.Map.of("dimension", dim))));
+            lore.add(MessageUtil.toComponent(
+                    plugin.getConfigManager().getMessage("gui.fallback.request.trap-percent",
+                            java.util.Map.of("tpa_trap_percent", trapStr))));
+            lore.add(MessageUtil.toComponent(
+                    plugin.getConfigManager().getMessage("gui.fallback.request.rating",
+                            java.util.Map.of("tpa_rating", ratingStr))));
         }
         meta.lore(lore);
         skull.setItemMeta(meta);

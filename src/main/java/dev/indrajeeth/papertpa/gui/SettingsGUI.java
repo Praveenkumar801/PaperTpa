@@ -31,8 +31,6 @@ import java.util.concurrent.CompletableFuture;
  */
 public class SettingsGUI implements InventoryHolder {
 
-    private static final String STAR = "\u2B50";
-
     /** Slot indices — kept as instance fields so clicks can resolve them. */
     public static final int DEFAULT_HEAD_SLOT          = 4;
     public static final int DEFAULT_TP_REQUESTS_SLOT   = 10;
@@ -106,24 +104,30 @@ public class SettingsGUI implements InventoryHolder {
                 ? cfg.getInt("tp-requests-slot", DEFAULT_TP_REQUESTS_SLOT) : DEFAULT_TP_REQUESTS_SLOT;
         inventory.setItem(reqSlot, buildToggleItem(plugin, cfg,
                 requestsEnabled, "tp-requests-enabled-item", "tp-requests-disabled-item",
-                "&aTeleport Requests: &2ON", "&cTeleport Requests: &4OFF",
-                "&7Click to &cdisable &7TP requests.", "&7Click to &aenable &7TP requests."));
+                "gui.fallback.settings-toggle.tp-requests-on",
+                "gui.fallback.settings-toggle.tp-requests-off",
+                "gui.fallback.settings-toggle.tp-requests-lore-on",
+                "gui.fallback.settings-toggle.tp-requests-lore-off"));
 
         // Auto-Accept toggle
         int autoSlot = cfg != null
                 ? cfg.getInt("autotp-slot", DEFAULT_AUTOTP_SLOT) : DEFAULT_AUTOTP_SLOT;
         inventory.setItem(autoSlot, buildToggleItem(plugin, cfg,
                 autoAccept, "autotp-enabled-item", "autotp-disabled-item",
-                "&aAuto-Accept TP: &2ON", "&cAuto-Accept TP: &4OFF",
-                "&7Click to &cdisable &7auto-accept.", "&7Click to &aenable &7auto-accept."));
+                "gui.fallback.settings-toggle.autotp-on",
+                "gui.fallback.settings-toggle.autotp-off",
+                "gui.fallback.settings-toggle.autotp-lore-on",
+                "gui.fallback.settings-toggle.autotp-lore-off"));
 
         // Rating Notifications toggle
         int notifSlot = cfg != null
                 ? cfg.getInt("notifications-slot", DEFAULT_NOTIFICATIONS_SLOT) : DEFAULT_NOTIFICATIONS_SLOT;
         inventory.setItem(notifSlot, buildToggleItem(plugin, cfg,
                 notificationsEnabled, "notifications-enabled-item", "notifications-disabled-item",
-                "&aRating Notifications: &2ON", "&cRating Notifications: &4OFF",
-                "&7Click to &cdisable &7rating prompts.", "&7Click to &aenable &7rating prompts."));
+                "gui.fallback.settings-toggle.notifications-on",
+                "gui.fallback.settings-toggle.notifications-off",
+                "gui.fallback.settings-toggle.notifications-lore-on",
+                "gui.fallback.settings-toggle.notifications-lore-off"));
     }
 
     private static ItemStack buildHeadItem(PaperTpa plugin, ConfigurationSection cfg,
@@ -153,9 +157,15 @@ public class SettingsGUI implements InventoryHolder {
             }
         }
         if (lore.isEmpty()) {
-            lore.add(MessageUtil.toComponent("&7Sent:     &f" + stats.totalSent));
-            lore.add(MessageUtil.toComponent("&7Received: &f" + stats.totalReceived));
-            lore.add(MessageUtil.toComponent("&7Rating:   &f" + ratingStr + " " + STAR));
+            lore.add(MessageUtil.toComponent(
+                    plugin.getConfigManager().getMessage("gui.fallback.settings.sent",
+                            java.util.Map.of("tpa_sent", String.valueOf(stats.totalSent)))));
+            lore.add(MessageUtil.toComponent(
+                    plugin.getConfigManager().getMessage("gui.fallback.settings.received",
+                            java.util.Map.of("tpa_received", String.valueOf(stats.totalReceived)))));
+            lore.add(MessageUtil.toComponent(
+                    plugin.getConfigManager().getMessage("gui.fallback.settings.rating",
+                            java.util.Map.of("tpa_rating", ratingStr))));
         }
         meta.lore(lore);
         skull.setItemMeta(meta);
@@ -165,20 +175,22 @@ public class SettingsGUI implements InventoryHolder {
     private static ItemStack buildToggleItem(PaperTpa plugin, ConfigurationSection cfg,
                                               boolean enabled,
                                               String enabledKey, String disabledKey,
-                                              String defaultNameOn, String defaultNameOff,
-                                              String defaultLoreOn, String defaultLoreOff) {
+                                              String nameOnMsgKey, String nameOffMsgKey,
+                                              String loreOnMsgKey, String loreOffMsgKey) {
         String cfgKey = enabled ? enabledKey : disabledKey;
         ConfigurationSection itemCfg = cfg != null ? cfg.getConfigurationSection(cfgKey) : null;
         if (itemCfg != null) {
             return ItemResolver.resolve(itemCfg);
         }
-        // Fallback when config section is missing
+        // Fallback: read display strings from messages.yml
         Material mat = enabled ? Material.LIME_STAINED_GLASS_PANE : Material.RED_STAINED_GLASS_PANE;
         ItemStack item = new ItemStack(mat);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            meta.displayName(MessageUtil.toComponent(enabled ? defaultNameOn : defaultNameOff));
-            meta.lore(List.of(MessageUtil.toComponent(enabled ? defaultLoreOn : defaultLoreOff)));
+            String nameMsg = plugin.getConfigManager().getMessage(enabled ? nameOnMsgKey : nameOffMsgKey);
+            String loreMsg = plugin.getConfigManager().getMessage(enabled ? loreOnMsgKey : loreOffMsgKey);
+            meta.displayName(MessageUtil.toComponent(nameMsg));
+            meta.lore(List.of(MessageUtil.toComponent(loreMsg)));
             item.setItemMeta(meta);
         }
         return item;
