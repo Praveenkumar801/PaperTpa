@@ -20,29 +20,38 @@
 
 ## Commands
 
-| Command                    | Description                               | Permission             |
-|----------------------------|-------------------------------------------|------------------------|
-| `/tpa <player>`            | Send a teleport request                   | `papertpa.tpa`         |
-| `/tpaccept [player]`       | Accept a teleport request                 | `papertpa.tpaccept`    |
-| `/tpdeny [player]`         | Deny a teleport request                   | `papertpa.tpdeny`      |
-| `/tptoggle`                | Toggle teleport requests on/off           | `papertpa.toggle`      |
-| `/tpcancel`                | Cancel your pending request or teleport   | `papertpa.tpa`         |
-| `/tplist`                  | List all your pending teleport requests   | `papertpa.tpa`         |
-| `/papertpa reload`         | Reload the plugin configuration           | `papertpa.admin`       |
+| Command                    | Description                                          | Permission               |
+|----------------------------|------------------------------------------------------|--------------------------|
+| `/tpa <player>`            | Send a teleport request                              | `papertpa.tpa`           |
+| `/tpaccept [player]`       | Accept a teleport request                            | `papertpa.tpaccept`      |
+| `/tpdeny [player]`         | Deny a teleport request                              | `papertpa.tpdeny`        |
+| `/tptoggle`                | Toggle teleport requests on/off                      | `papertpa.toggle`        |
+| `/tpcancel`                | Cancel your pending request or teleport warmup       | `papertpa.tpa`           |
+| `/tplist`                  | List all your pending teleport requests              | `papertpa.tpa`           |
+| `/tpaview <player>`        | Open the request GUI for a pending request           | `papertpa.tpa`           |
+| `/tpstats [player]`        | View TPA statistics GUI for yourself or another player | `papertpa.tpa`         |
+| `/tpsettings`              | Open the settings GUI (toggle requests, auto-accept, notifications) | `papertpa.tpa` |
+| `/tpnotify`                | Toggle post-teleport rating notifications on/off     | `papertpa.tpa`           |
+| `/tpauto`                  | Toggle auto-accept mode for incoming requests        | `papertpa.auto`          |
+| `/tprate`                  | Open the rating GUI after a teleport                 | `papertpa.tpa`           |
+| `/papertpa reload`         | Reload the plugin configuration                      | `papertpa.admin`         |
 
 ## Permissions
 
-| Node                          | Description                        | Default |
-|-------------------------------|------------------------------------|---------|
-| `papertpa.tpa`                | Send teleport requests             | true    |
-| `papertpa.tpaccept`           | Accept teleport requests           | true    |
-| `papertpa.tpdeny`             | Deny teleport requests             | true    |
-| `papertpa.toggle`             | Toggle teleport requests           | true    |
-| `papertpa.admin`              | Admin commands                     | op      |
-| `papertpa.bypass`             | Bypass disabled requests           | op      |
-| `papertpa.cooldown.bypass`    | Bypass cooldown timers             | op      |
-| `papertpa.delay.bypass`       | Bypass teleport warmup             | op      |
-| `papertpa.*`                  | All PaperTpa permissions           | op      |
+| Node                          | Description                                  | Default |
+|-------------------------------|----------------------------------------------|---------|
+| `papertpa.tpa`                | Send/cancel/list/view teleport requests      | true    |
+| `papertpa.tpaccept`           | Accept teleport requests                     | true    |
+| `papertpa.tpdeny`             | Deny teleport requests                       | true    |
+| `papertpa.toggle`             | Toggle teleport requests                     | true    |
+| `papertpa.auto`               | Toggle auto-accept mode                      | true    |
+| `papertpa.admin`              | Admin commands (reload)                      | op      |
+| `papertpa.bypass`             | Bypass disabled requests                     | op      |
+| `papertpa.cooldown.bypass`    | Bypass cooldown timers                       | op      |
+| `papertpa.delay.bypass`       | Bypass teleport warmup delay                 | op      |
+| `papertpa.stats.others`       | View another player's stats                  | op      |
+| `papertpa.immunity.bypass`    | Bypass post-teleport immunity (can hit immune players) | op |
+| `papertpa.*`                  | All PaperTpa permissions                     | op      |
 
 ## Configuration
 
@@ -93,14 +102,13 @@ gui:
 
 - **PlaceholderAPI** — optional; enables `%tpa_*%` placeholders
 - **ItemsAdder** — optional; enables `itemsadder: namespace:id` item resolution in GUI config
+- **LuckPerms** — optional; uses LuckPerms API for permission checks when present
 
 ## Building
 
 ```bash
-# build a shaded jar with Gradle
 ./gradlew shadowJar
-
-# find the jar in build/libs/
+# Output jar: build/libs/PaperTpa-<version>.jar
 ```
 
 ## License

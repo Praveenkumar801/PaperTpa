@@ -16,9 +16,6 @@ import java.util.List;
  * This ensures the Minecraft client knows about every command, preventing
  * the "unknown command" confirmation dialog when clicking chat run_command
  * click events (e.g. the "[View Request]" notification button).
- *
- * Pattern replicated from well-maintained Paper 1.21 plugins:
- * SmartSpawner (NighterDevelopment), DottUtils (Dottiewh), LightTag (neokoni).
  */
 @SuppressWarnings("UnstableApiUsage")
 public final class BrigadierRegistrar {
@@ -35,7 +32,6 @@ public final class BrigadierRegistrar {
         plugin.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             Commands cmds = event.registrar();
 
-            // ─── No-argument commands ─────────────────────────────────
             for (String name : List.of("tptoggle", "tpcancel", "tplist",
                                        "tpnotify", "tpauto", "tprate")) {
                 String n = name;
@@ -46,7 +42,6 @@ public final class BrigadierRegistrar {
                 );
             }
 
-            // ─── /tpa <player> ────────────────────────────────────────
             cmds.register(
                 Commands.literal("tpa")
                     .then(Commands.argument("player", StringArgumentType.word())
@@ -67,7 +62,6 @@ public final class BrigadierRegistrar {
                     .build()
             );
 
-            // ─── /tpaccept [player]  /tpdeny [player] ────────────────
             for (String name : List.of("tpaccept", "tpdeny")) {
                 String n = name;
                 cmds.register(
@@ -96,7 +90,6 @@ public final class BrigadierRegistrar {
                 );
             }
 
-            // ─── /tpaview <player> ────────────────────────────────────
             cmds.register(
                 Commands.literal("tpaview")
                     .then(Commands.argument("player", StringArgumentType.word())
@@ -122,7 +115,6 @@ public final class BrigadierRegistrar {
                     .build()
             );
 
-            // ─── /tpstats [player] ────────────────────────────────────
             cmds.register(
                 Commands.literal("tpstats")
                     .then(Commands.argument("player", StringArgumentType.word())
@@ -143,7 +135,6 @@ public final class BrigadierRegistrar {
                     .build()
             );
 
-            // ─── /papertpa [sub] ──────────────────────────────────────
             cmds.register(
                 Commands.literal("papertpa")
                     .then(Commands.argument("sub", StringArgumentType.word())

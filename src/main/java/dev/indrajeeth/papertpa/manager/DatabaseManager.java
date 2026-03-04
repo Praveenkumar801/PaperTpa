@@ -17,7 +17,6 @@ public class DatabaseManager {
     private Connection connection;
     private final File databaseFile;
 
-    // ── Column whitelists (prevent SQL injection via dynamic column names) ──────
     private static final Set<String> VALID_STAT_COLUMNS = Set.of(
             "total_sent", "total_received", "total_accepted", "total_denied",
             "total_ratings", "rating_sum", "total_trap_reports");
@@ -36,7 +35,6 @@ public class DatabaseManager {
             Class.forName("org.sqlite.JDBC");
             connection = DriverManager.getConnection("jdbc:sqlite:" + databaseFile.getAbsolutePath());
             createTables();
-            migrateDatabase();
             plugin.getLogger().info("Database initialised successfully.");
         } catch (SQLException | ClassNotFoundException e) {
             plugin.getLogger().log(Level.SEVERE, "Failed to initialise database", e);
@@ -84,20 +82,6 @@ public class DatabaseManager {
                 )
                 """);
         }
-    }
-
-    private void migrateDatabase() {
-        tryAlter("ALTER TABLE user_preferences ADD COLUMN notification_enabled INTEGER NOT NULL DEFAULT 1");
-        tryAlter("ALTER TABLE user_preferences ADD COLUMN auto_accept          INTEGER NOT NULL DEFAULT 0");
-        tryAlter("ALTER TABLE players ADD COLUMN total_ratings      INTEGER NOT NULL DEFAULT 0");
-        tryAlter("ALTER TABLE players ADD COLUMN rating_sum         INTEGER NOT NULL DEFAULT 0");
-        tryAlter("ALTER TABLE players ADD COLUMN total_trap_reports INTEGER NOT NULL DEFAULT 0");
-    }
-
-    private void tryAlter(String sql) {
-        try (Statement stmt = connection.createStatement()) {
-            stmt.execute(sql);
-        } catch (SQLException ignored) { /* column already exists */ }
     }
 
     public CompletableFuture<Void>    setRequestsEnabled(UUID uuid, boolean v) {

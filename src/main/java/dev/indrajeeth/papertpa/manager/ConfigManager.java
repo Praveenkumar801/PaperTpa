@@ -138,9 +138,6 @@ public class ConfigManager {
     }
 
     public String getMessage(String path) {
-        // With bundled defaults applied, getString will never return null for a
-        // key that exists in the shipped messages.yml; the explicit fallback
-        // only fires for truly unknown paths.
         String value = messages.getString(path);
         return value != null ? value : "&cMessage not found: " + path;
     }
