@@ -115,9 +115,16 @@ gui:
   request:
     title: "&6Teleport Request"
     size: 27
+    # Slot for the requester's player head
+    requester-slot: 4
     accept-slot: 11
-    deny-slot: 15
     info-slot: 13
+    deny-slot: 15
+    requester-item:
+      name: "&e%player%"
+      lore:
+        - "&7Location: &f%x%, %y%, %z%"
+        - "&7Dimension: &f%dimension%"
     accept-item:
       # Vanilla material fallback
       material: LIME_STAINED_GLASS_PANE
