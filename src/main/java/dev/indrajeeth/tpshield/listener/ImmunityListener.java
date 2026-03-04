@@ -1,0 +1,38 @@
+package dev.indrajeeth.tpshield.listener;
+
+import dev.indrajeeth.tpshield.TpShield;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+
+/**
+ * Cancels incoming entity damage for players who have post-teleport immunity
+ * active (see {@code settings.tp-immunity} in config.yml).
+ * Also cleans up pending TP requests and warmup teleports when a player quits.
+ */
+public class ImmunityListener implements Listener {
+
+    private final TpShield plugin;
+
+    public ImmunityListener(TpShield plugin) {
+        this.plugin = plugin;
+    }
+
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof Player victim)) return;
+        if (event.getDamager() instanceof Player attacker
+                && attacker.hasPermission("tpshield.immunity.bypass")) return;
+        if (plugin.getTeleportManager().isImmune(victim.getUniqueId())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        plugin.getTeleportManager().handlePlayerQuit(event.getPlayer());
+    }
+}

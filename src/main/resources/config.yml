@@ -1,4 +1,4 @@
-# PaperTpa Configuration
+# TpShield Configuration
 # Author: IndrajeethY
 
 # ─────────────────────────────────────────────
@@ -127,7 +127,7 @@ gui:
       # Custom Model Data for resource-pack texture (0 = disabled)
       custom-model-data: 0
       # ItemsAdder item ID (leave empty to use material above)
-      # Example: "papertpa:accept_button"
+      # Example: "tpshield:accept_button"
       itemsadder: ""
       name: "&a✔ Accept"
       lore:

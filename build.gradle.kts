@@ -46,7 +46,7 @@ java {
 }
 
 application {
-    mainClass = "dev.indrajeeth.papertpa.PaperTpa"
+    mainClass = "dev.indrajeeth.tpshield.TpShield"
 }
 
 val pluginVersion: String = file("src/main/resources/plugin.yml")
@@ -56,7 +56,7 @@ val pluginVersion: String = file("src/main/resources/plugin.yml")
     ?.trim() ?: "1.0.0"
 
 tasks.shadowJar {
-  archiveBaseName.set("PaperTpa")
+  archiveBaseName.set("TpShield")
   archiveClassifier.set("")
   archiveVersion.set(pluginVersion)
 

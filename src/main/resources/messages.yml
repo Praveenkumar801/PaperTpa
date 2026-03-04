@@ -1,9 +1,9 @@
-# PaperTpa Messages Configuration
+# TpShield Messages Configuration
 # All messages support color codes and placeholders
 
 # General messages
 general:
-  prefix: "&7[&6PaperTpa&7] &r"
+  prefix: "&7[&6TpShield&7] &r"
   player-only: "&cThis command can only be used by players."
   no-permission: "&cYou don't have permission to use this command."
   player-not-found: "&cPlayer not found."
