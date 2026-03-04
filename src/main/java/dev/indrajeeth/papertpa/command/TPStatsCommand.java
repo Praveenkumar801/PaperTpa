@@ -33,19 +33,25 @@ public class TPStatsCommand extends SimpleCommandHandler {
             // Show own stats
             plugin.getGUIManager().openStatsGUI(player, player.getUniqueId());
         } else {
-            // Show another player's stats
+            // Show another player's stats — requires elevated permission
             if (!player.hasPermission("papertpa.stats.others")) {
                 MessageUtil.sendMessageWithPlaceholders(player,
                         configManager.getPrefix() + configManager.getMessage("general.no-permission"));
                 return true;
             }
-            Player target = Bukkit.getPlayer(args[0]);
-            if (target == null) {
-                MessageUtil.sendMessageWithPlaceholders(player,
-                        configManager.getPrefix() + configManager.getMessage("general.player-not-found"));
-                return true;
+            // Support both online and offline players
+            Player onlineTarget = Bukkit.getPlayerExact(args[0]);
+            if (onlineTarget != null) {
+                plugin.getGUIManager().openStatsGUI(player, onlineTarget.getUniqueId());
+            } else {
+                org.bukkit.OfflinePlayer offlineTarget = Bukkit.getOfflinePlayerIfCached(args[0]);
+                if (offlineTarget == null) {
+                    MessageUtil.sendMessageWithPlaceholders(player,
+                            configManager.getPrefix() + configManager.getMessage("general.player-not-found"));
+                    return true;
+                }
+                plugin.getGUIManager().openStatsGUI(player, offlineTarget.getUniqueId());
             }
-            plugin.getGUIManager().openStatsGUI(player, target.getUniqueId());
         }
         return true;
     }

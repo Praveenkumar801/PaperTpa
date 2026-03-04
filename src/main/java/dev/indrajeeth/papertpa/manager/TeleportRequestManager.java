@@ -306,7 +306,7 @@ public class TeleportRequestManager {
                             .append(prompt)
                             .append(Component.text(" "))
                             .append(MessageUtil.toComponent(rateButtonText)
-                                    .clickEvent(ClickEvent.runCommand("/tprate " + targetName))
+                                    .clickEvent(ClickEvent.runCommand("/tprate"))
                                     .hoverEvent(HoverEvent.showText(
                                             MessageUtil.toComponent(
                                                     plugin.getConfigManager().getMessage("rating.click-to-rate-hover")))))
