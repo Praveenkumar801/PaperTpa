@@ -1,5 +1,6 @@
 package dev.indrajeeth.papertpa;
 
+import dev.indrajeeth.papertpa.command.BrigadierRegistrar;
 import dev.indrajeeth.papertpa.gui.GUIManager;
 import dev.indrajeeth.papertpa.integration.PlaceholderAPIIntegration;
 import dev.indrajeeth.papertpa.listener.ImmunityListener;
@@ -56,6 +57,8 @@ public class PaperTpa extends JavaPlugin {
 
         commandManager = new CommandManager(this);
         commandManager.registerCommands();
+
+        new BrigadierRegistrar(this).register();
 
         Bukkit.getPluginManager().registerEvents(new InventoryClickListener(this), this);
         Bukkit.getPluginManager().registerEvents(new ImmunityListener(this), this);

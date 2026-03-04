@@ -19,7 +19,8 @@ public class DatabaseManager {
 
     // ── Column whitelists (prevent SQL injection via dynamic column names) ──────
     private static final Set<String> VALID_STAT_COLUMNS = Set.of(
-            "total_sent", "total_received", "total_accepted", "total_denied");
+            "total_sent", "total_received", "total_accepted", "total_denied",
+            "total_ratings", "rating_sum", "total_trap_reports");
 
     private static final Set<String> VALID_PREF_COLUMNS = Set.of(
             "requests_enabled", "last_request_time", "notification_enabled", "auto_accept");
@@ -72,11 +73,14 @@ public class DatabaseManager {
                 """);
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS players (
-                    uuid           TEXT    PRIMARY KEY,
-                    total_sent     INTEGER NOT NULL DEFAULT 0,
-                    total_received INTEGER NOT NULL DEFAULT 0,
-                    total_accepted INTEGER NOT NULL DEFAULT 0,
-                    total_denied   INTEGER NOT NULL DEFAULT 0
+                    uuid               TEXT    PRIMARY KEY,
+                    total_sent         INTEGER NOT NULL DEFAULT 0,
+                    total_received     INTEGER NOT NULL DEFAULT 0,
+                    total_accepted     INTEGER NOT NULL DEFAULT 0,
+                    total_denied       INTEGER NOT NULL DEFAULT 0,
+                    total_ratings      INTEGER NOT NULL DEFAULT 0,
+                    rating_sum         INTEGER NOT NULL DEFAULT 0,
+                    total_trap_reports INTEGER NOT NULL DEFAULT 0
                 )
                 """);
         }
@@ -85,6 +89,9 @@ public class DatabaseManager {
     private void migrateDatabase() {
         tryAlter("ALTER TABLE user_preferences ADD COLUMN notification_enabled INTEGER NOT NULL DEFAULT 1");
         tryAlter("ALTER TABLE user_preferences ADD COLUMN auto_accept          INTEGER NOT NULL DEFAULT 0");
+        tryAlter("ALTER TABLE players ADD COLUMN total_ratings      INTEGER NOT NULL DEFAULT 0");
+        tryAlter("ALTER TABLE players ADD COLUMN rating_sum         INTEGER NOT NULL DEFAULT 0");
+        tryAlter("ALTER TABLE players ADD COLUMN total_trap_reports INTEGER NOT NULL DEFAULT 0");
     }
 
     private void tryAlter(String sql) {
@@ -120,18 +127,45 @@ public class DatabaseManager {
     public CompletableFuture<PlayerStats> getPlayerStats(UUID uuid) {
         return supplyAsync(() -> {
             try (PreparedStatement ps = getConnection().prepareStatement(
-                    "SELECT total_sent,total_received,total_accepted,total_denied "
+                    "SELECT total_sent,total_received,total_accepted,total_denied,"
+                  + "total_ratings,rating_sum,total_trap_reports "
                   + "FROM players WHERE uuid=?")) {
                 ps.setString(1, uuid.toString());
                 ResultSet rs = ps.executeQuery();
                 if (rs.next()) {
-                    return new PlayerStats(rs.getInt("total_sent"), rs.getInt("total_received"),
-                            rs.getInt("total_accepted"), rs.getInt("total_denied"));
+                    return new PlayerStats(
+                            rs.getInt("total_sent"), rs.getInt("total_received"),
+                            rs.getInt("total_accepted"), rs.getInt("total_denied"),
+                            rs.getInt("total_ratings"), rs.getInt("rating_sum"),
+                            rs.getInt("total_trap_reports"));
                 }
                 return PlayerStats.EMPTY;
             } catch (SQLException e) {
                 plugin.getLogger().log(Level.WARNING, "Failed to read player stats", e);
                 return PlayerStats.EMPTY;
+            }
+        });
+    }
+
+    /**
+     * Persists a rating submission: increments total_ratings, adds stars to rating_sum,
+     * and optionally increments total_trap_reports.
+     */
+    public CompletableFuture<Void> addRating(UUID targetUuid, int stars, boolean trapReport) {
+        return runAsync(() -> {
+            String sql = "INSERT INTO players (uuid, total_ratings, rating_sum, total_trap_reports) "
+                       + "VALUES (?, 1, ?, ?) "
+                       + "ON CONFLICT(uuid) DO UPDATE SET "
+                       + "total_ratings=total_ratings+1, "
+                       + "rating_sum=rating_sum+excluded.rating_sum, "
+                       + "total_trap_reports=total_trap_reports+excluded.total_trap_reports";
+            try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+                ps.setString(1, targetUuid.toString());
+                ps.setInt(2, stars);
+                ps.setInt(3, trapReport ? 1 : 0);
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                plugin.getLogger().log(Level.WARNING, "Failed to save rating", e);
             }
         });
     }
