@@ -2,10 +2,11 @@ package dev.indrajeeth.papertpa.command;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import dev.indrajeeth.papertpa.PaperTpa;
+import dev.indrajeeth.papertpa.manager.CommandManager;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.Bukkit;
-import org.bukkit.command.PluginCommand;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import java.util.List;
@@ -23,9 +24,11 @@ import java.util.List;
 public final class BrigadierRegistrar {
 
     private final PaperTpa plugin;
+    private final CommandManager commandManager;
 
-    public BrigadierRegistrar(PaperTpa plugin) {
+    public BrigadierRegistrar(PaperTpa plugin, CommandManager commandManager) {
         this.plugin = plugin;
+        this.commandManager = commandManager;
     }
 
     public void register() {
@@ -160,10 +163,10 @@ public final class BrigadierRegistrar {
         });
     }
 
-    private void delegate(org.bukkit.command.CommandSender sender, String name, String[] args) {
-        PluginCommand cmd = plugin.getCommand(name);
-        if (cmd != null) {
-            cmd.execute(sender, name, args);
+    private void delegate(CommandSender sender, String name, String[] args) {
+        SimpleCommandHandler handler = commandManager.getHandler(name);
+        if (handler != null) {
+            handler.onCommand(sender, null, name, args);
         } else {
             plugin.getLogger().warning("[BrigadierRegistrar] Command not found: /" + name);
         }

@@ -58,7 +58,7 @@ public class PaperTpa extends JavaPlugin {
         commandManager = new CommandManager(this);
         commandManager.registerCommands();
 
-        new BrigadierRegistrar(this).register();
+        new BrigadierRegistrar(this, commandManager).register();
 
         Bukkit.getPluginManager().registerEvents(new InventoryClickListener(this), this);
         Bukkit.getPluginManager().registerEvents(new ImmunityListener(this), this);
