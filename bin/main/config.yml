@@ -1,0 +1,216 @@
+# PaperTpa Configuration
+# Author: IndrajeethY
+
+# ─────────────────────────────────────────────
+#  Core settings
+# ─────────────────────────────────────────────
+settings:
+  # Seconds before an unanswered TPA request expires
+  request-timeout: 60
+  # Seconds a player must wait between sending requests
+  cooldown: 10
+  # Warmup seconds before the teleport fires (0 = instant)
+  teleport-delay: 5
+  # Seconds after landing before the rating GUI appears
+  rating-delay: 30
+  # Seconds after landing in which a death counts as a trap
+  trap-window: 20
+  # Teleport the victim back if they were trapped
+  tpback-on-trap: true
+  # Minimum number of ratings before appearing on /tpa leaderboard
+  min-ratings-for-leaderboard: 5
+  # Whether to play sounds on teleport events
+  enable-sounds: true
+  # Freeze destination location at the moment of acceptance
+  capture-location-on-accept: true
+
+# ─────────────────────────────────────────────
+#  Notification sounds
+#  sound: Bukkit Sound enum name (https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Sound.html)
+#  volume: 0.0–2.0  |  pitch: 0.5–2.0
+# ─────────────────────────────────────────────
+sounds:
+  # Played to the sender when a TPA request is sent
+  request-sent:
+    enabled: true
+    sound: UI_BUTTON_CLICK
+    volume: 1.0
+    pitch: 1.0
+
+  # Played to the target when they receive a TPA request
+  request-received:
+    enabled: true
+    sound: BLOCK_NOTE_BLOCK_PLING
+    volume: 1.0
+    pitch: 1.2
+
+  # Played to both players when a request is accepted
+  request-accepted:
+    enabled: true
+    sound: ENTITY_EXPERIENCE_ORB_PICKUP
+    volume: 1.0
+    pitch: 1.0
+
+  # Played to both players when a request is denied
+  request-denied:
+    enabled: true
+    sound: ENTITY_VILLAGER_NO
+    volume: 1.0
+    pitch: 1.0
+
+  # Played to the sender when their request expires
+  request-expired:
+    enabled: true
+    sound: BLOCK_NOTE_BLOCK_BASS
+    volume: 1.0
+    pitch: 0.8
+
+  # Played to the teleporting player at the start of the warmup countdown
+  teleport-start:
+    enabled: true
+    sound: BLOCK_NOTE_BLOCK_CHIME
+    volume: 1.0
+    pitch: 1.0
+
+  # Played each second during the warmup countdown
+  teleport-countdown:
+    enabled: true
+    sound: BLOCK_NOTE_BLOCK_HAT
+    volume: 0.8
+    pitch: 1.0
+
+  # Played to the player upon successful teleport
+  teleport-success:
+    enabled: true
+    sound: ENTITY_ENDERMAN_TELEPORT
+    volume: 1.0
+    pitch: 1.0
+
+  # Played when the teleport is cancelled (moved / damage / logout)
+  teleport-cancelled:
+    enabled: true
+    sound: ENTITY_VILLAGER_HURT
+    volume: 1.0
+    pitch: 1.0
+
+  # Played when the player opens the rating GUI
+  rating-prompt:
+    enabled: true
+    sound: BLOCK_NOTE_BLOCK_PLING
+    volume: 1.0
+    pitch: 1.5
+
+# ─────────────────────────────────────────────
+#  GUI — TPA Request (shown to the target)
+# ─────────────────────────────────────────────
+gui:
+  request:
+    title: "&6Teleport Request"
+    size: 27
+    accept-slot: 11
+    deny-slot: 15
+    info-slot: 13
+    accept-item:
+      # Vanilla material fallback
+      material: LIME_STAINED_GLASS_PANE
+      # Custom Model Data for resource-pack texture (0 = disabled)
+      custom-model-data: 0
+      # ItemsAdder item ID (leave empty to use material above)
+      # Example: "papertpa:accept_button"
+      itemsadder: ""
+      name: "&a✔ Accept"
+      lore:
+        - "&7Click to accept the teleport request"
+    deny-item:
+      material: RED_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+      name: "&c✘ Deny"
+      lore:
+        - "&7Click to deny the teleport request"
+    info-item:
+      material: PLAYER_HEAD
+      custom-model-data: 0
+      itemsadder: ""
+      name: "&e👤 View Player Info"
+      lore:
+        - "&7Click to view the requester's stats"
+    filler-item:
+      material: GRAY_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+      name: " "
+      lore: []
+
+  # GUI — Player Info Panel
+  player-info:
+    title: "&6Player Info — &e%player%"
+    size: 27
+    stats-slot: 13
+    stats-item:
+      material: PAPER
+      custom-model-data: 0
+      itemsadder: ""
+      name: "&e%player%"
+      lore:
+        - "&7Sent: &f%tpa_sent%"
+        - "&7Received: &f%tpa_received%"
+        - "&7Accepted: &f%tpa_accepted%"
+        - "&7Denied: &f%tpa_denied%"
+        - "&7Trap %%: &f%tpa_trap_percent%%"
+        - "&7Rating: &f%tpa_rating% ⭐"
+        - "&7Total Ratings: &f%tpa_total_ratings%"
+        - "&7Reputation: %tpa_reputation_tier%"
+    filler-item:
+      material: GRAY_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+      name: " "
+      lore: []
+
+  # GUI — Post-teleport Rating
+  rating:
+    title: "&6Rate your experience"
+    size: 27
+    # Slots 10-14 = stars 1-5
+    star-slots: [10, 11, 12, 13, 14]
+    trap-report-slot: 16
+    confirm-slot: 22
+    star-item:
+      material: GOLDEN_SWORD
+      custom-model-data: 0
+      itemsadder: ""
+      name: "&e%stars% ⭐"
+      lore:
+        - "&7Click to rate &e%stars% star(s)"
+    trap-report-item:
+      material: RED_CONCRETE
+      custom-model-data: 0
+      itemsadder: ""
+      name: "&c🚩 Report Trap: &f%state%"
+      lore:
+        - "&7Toggle on if you were trapped"
+    confirm-item:
+      material: EMERALD
+      custom-model-data: 0
+      itemsadder: ""
+      name: "&aConfirm Rating"
+      lore:
+        - "&7Submit your rating"
+    filler-item:
+      material: GRAY_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+      name: " "
+      lore: []
+
+  # GUI — Leaderboard
+  leaderboard:
+    title: "&6TPA Leaderboard"
+    size: 54
+    filler-item:
+      material: GRAY_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+      name: " "
+      lore: []
