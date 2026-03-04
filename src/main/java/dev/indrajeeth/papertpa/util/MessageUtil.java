@@ -61,6 +61,14 @@ public class MessageUtil {
         sendMessage(player, message);
     }
 
+    public static void sendActionBar(Player player, String message) {
+        if (message == null || message.isEmpty()) return;
+        if (PaperTpa.getInstance().isPlaceholderAPIEnabled()) {
+            message = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(player, message);
+        }
+        player.sendActionBar(toComponent(message));
+    }
+
     public static String toLegacyString(Component component) {
         return LEGACY_SERIALIZER.serialize(component);
     }

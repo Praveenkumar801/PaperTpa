@@ -80,4 +80,15 @@ public class GUIManager {
             })
         );
     }
+
+    /**
+     * Fetches settings and stats asynchronously, then opens the settings GUI on the main thread.
+     */
+    public void openSettingsGUI(Player viewer) {
+        dev.indrajeeth.papertpa.gui.SettingsGUI.createAsync(plugin, viewer).thenAccept(gui ->
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (viewer.isOnline()) viewer.openInventory(gui.getInventory());
+            })
+        );
+    }
 }

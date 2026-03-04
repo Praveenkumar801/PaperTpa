@@ -122,7 +122,6 @@ public class RequestGUI implements InventoryHolder {
     private static String getDimensionName(World world) {
         if (world == null) return "Unknown";
         return switch (world.getEnvironment()) {
-            case NORMAL  -> "Overworld";
             case NETHER  -> "Nether";
             case THE_END -> "The End";
             default      -> world.getName();
