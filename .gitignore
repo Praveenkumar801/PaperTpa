@@ -3,3 +3,19 @@
 
 # Ignore Gradle build output directory
 build
+# Compiled files
+bin/
+target/
+out/
+*.class
+
+# IntelliJ
+.idea/
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# Logs
+*.log
