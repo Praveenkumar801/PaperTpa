@@ -10,6 +10,9 @@ import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -45,8 +48,6 @@ public class TeleportRequestManager {
         UUID requesterId = requester.getUniqueId();
         UUID targetId    = target.getUniqueId();
 
-        Location requesterLoc = requester.getLocation().clone();
-
         TPARequest existing = activeRequests.get(requesterId);
         if (existing != null && existing.getTargetId().equals(targetId)) {
             return CompletableFuture.completedFuture(RequestResult.ALREADY_HAS_REQUEST);
@@ -59,6 +60,8 @@ public class TeleportRequestManager {
                 return CompletableFuture.completedFuture(RequestResult.ON_COOLDOWN);
             }
         }
+
+        Location requesterLoc = requester.getLocation().clone();
 
         return database.areRequestsEnabled(targetId).thenCompose(enabled -> {
             if (!enabled && !requester.hasPermission("papertpa.bypass")) {
@@ -98,7 +101,7 @@ public class TeleportRequestManager {
         }
 
         Player requester = Bukkit.getPlayer(requesterId);
-        if (requester == null || !requester.isOnline()) {
+        if (requester == null) {
             return CompletableFuture.completedFuture(false);
         }
 
@@ -108,12 +111,11 @@ public class TeleportRequestManager {
 
         final boolean captureLocation = plugin.getConfigManager().captureLocationOnAccept();
         final Location captured       = captureLocation ? accepter.getLocation().clone() : null;
-        final UUID accepterIdFinal    = accepterId;
 
         Bukkit.getScheduler().runTask(plugin, () -> {
             Player req = Bukkit.getPlayer(requesterId);
-            Player acc = Bukkit.getPlayer(accepterIdFinal);
-            if (req == null || !req.isOnline()) {
+            Player acc = Bukkit.getPlayer(accepterId);
+            if (req == null) {
                 requesterToTarget.remove(requesterId); // leak fix: requester went offline
                 return;
             }
@@ -123,7 +125,7 @@ public class TeleportRequestManager {
                     && captured.getWorld() != null
                     && Bukkit.getWorld(captured.getWorld().getUID()) != null) {
                 dest = captured;
-            } else if (acc != null && acc.isOnline()) {
+            } else if (acc != null) {
                 dest = acc.getLocation();
             } else {
                 requesterToTarget.remove(requesterId); // leak fix: accepter went offline
@@ -155,32 +157,29 @@ public class TeleportRequestManager {
         UUID playerId = player.getUniqueId();
         if (pendingTeleports.containsKey(playerId)) return;
 
-        int delay = plugin.getConfigManager().getTeleportDelay();
+        ConfigManager cfg = plugin.getConfigManager();
+        int delay = cfg.getTeleportDelay();
 
-        if (delay == 0 && plugin.getConfigManager().isTpIdleEnabled()
+        if (delay == 0 && cfg.isTpIdleEnabled()
                 && !player.hasPermission("papertpa.delay.bypass")) {
-            int idleTime = plugin.getConfigManager().getTpIdleTime();
+            int idleTime = cfg.getTpIdleTime();
             if (idleTime > 0) delay = idleTime;
         }
 
         if (delay > 0 && !player.hasPermission("papertpa.delay.bypass")) {
             Location start = player.getLocation().clone();
-            PendingTeleport pending = new PendingTeleport(player, destination, start, delay);
+            PendingTeleport pending = new PendingTeleport(player, destination, start, delay, this);
             pendingTeleports.put(playerId, pending);
 
-            Map<String, String> ph = new HashMap<>();
-            ph.put("time", String.valueOf(delay));
             MessageUtil.sendMessageWithPlaceholders(player,
-                plugin.getConfigManager().getPrefix()
-                + plugin.getConfigManager().getMessage("teleport.starting", ph));
+                cfg.getPrefix() + cfg.getMessage("teleport.starting", Map.of("time", String.valueOf(delay))));
             SoundUtil.play(player, "teleport-start");
 
             BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
                 PendingTeleport tp = pendingTeleports.get(playerId);
-                if (tp == null || !tp.isValid()) {
-                    pendingTeleports.remove(playerId);
-                    return;
-                }
+                if (tp == null) return;
+
+                if (!tp.isValid()) { tp.cancel(); return; }
                 tp.tick();
             }, 20L, 20L);
             pending.setTask(task);
@@ -217,7 +216,7 @@ public class TeleportRequestManager {
                 scheduleRatingPrompt(player.getUniqueId());
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     Player p = Bukkit.getPlayer(player.getUniqueId());
-                    if (p != null && p.isOnline()) applyImmunity(p);
+                    if (p != null) applyImmunity(p);
                 });
             } else {
                 requesterToTarget.remove(player.getUniqueId()); // leak fix: async teleport failed
@@ -225,34 +224,38 @@ public class TeleportRequestManager {
         });
     }
 
-    private static final Set<org.bukkit.Material> DANGEROUS_MATERIALS = Set.of(
-            org.bukkit.Material.LAVA,
-            org.bukkit.Material.FIRE,
-            org.bukkit.Material.MAGMA_BLOCK,
-            org.bukkit.Material.SOUL_FIRE,
-            org.bukkit.Material.CAMPFIRE,
-            org.bukkit.Material.SOUL_CAMPFIRE,
-            org.bukkit.Material.SWEET_BERRY_BUSH,
-            org.bukkit.Material.WITHER_ROSE
+    private static final Set<Material> DANGEROUS_MATERIALS = Set.of(
+            Material.LAVA,
+            Material.FIRE,
+            Material.MAGMA_BLOCK,
+            Material.SOUL_FIRE,
+            Material.CAMPFIRE,
+            Material.SOUL_CAMPFIRE,
+            Material.SWEET_BERRY_BUSH,
+            Material.WITHER_ROSE
     );
 
     private boolean isSafeLocation(Location loc) {
-        if (loc.getWorld() == null) return false;
-        if (loc.getY() < loc.getWorld().getMinHeight()) return false;
+        World world = loc.getWorld();
+        if (world == null) return false;
+        if (loc.getY() < world.getMinHeight()) return false;
 
-        org.bukkit.block.Block feet   = loc.getBlock();
-        org.bukkit.block.Block head   = loc.clone().add(0, 1, 0).getBlock();
-        org.bukkit.block.Block ground = loc.clone().subtract(0, 1, 0).getBlock();
+        int bx = loc.getBlockX(), by = loc.getBlockY(), bz = loc.getBlockZ();
+        Block feet   = world.getBlockAt(bx, by,     bz);
+        Block head   = world.getBlockAt(bx, by + 1, bz);
+        Block ground = world.getBlockAt(bx, by - 1, bz);
 
-        boolean feetClear  = feet.getType().isAir()   || !feet.getType().isSolid();
-        boolean headClear  = head.getType().isAir()   || !head.getType().isSolid();
-        boolean hasGround  = ground.getType().isSolid();
-        // Lava / fire / magma / campfire / etc. are deadly even when passable
-        boolean notHazard  = !DANGEROUS_MATERIALS.contains(feet.getType())
-                          && !DANGEROUS_MATERIALS.contains(head.getType())
-                          && !DANGEROUS_MATERIALS.contains(ground.getType());
+        Material feetType   = feet.getType();
+        Material headType   = head.getType();
+        Material groundType = ground.getType();
 
-        return feetClear && headClear && hasGround && notHazard;
+        // feet and head must be passable; ground must be solid; none can be a hazard
+        return !feetType.isSolid()
+                && !headType.isSolid()
+                && groundType.isSolid()
+                && !DANGEROUS_MATERIALS.contains(feetType)
+                && !DANGEROUS_MATERIALS.contains(headType)
+                && !DANGEROUS_MATERIALS.contains(groundType);
     }
 
     private void scheduleRatingPrompt(UUID playerId) {
@@ -266,7 +269,7 @@ public class TeleportRequestManager {
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             Player rater = Bukkit.getPlayer(playerId);
-            if (rater == null || !rater.isOnline()) {
+            if (rater == null) {
                 pendingRatingScheduled.remove(playerId);
                 return;
             }
@@ -278,15 +281,17 @@ public class TeleportRequestManager {
                 }
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     Player r = Bukkit.getPlayer(playerId);
-                    if (r == null || !r.isOnline()) {
+                    if (r == null) {
                         pendingRatingScheduled.remove(playerId);
                         return;
                     }
 
                     String targetName = Optional.ofNullable(Bukkit.getPlayer(targetId))
                             .map(Player::getName)
-                            .orElseGet(() -> Bukkit.getOfflinePlayer(targetId).getName() != null
-                                    ? Bukkit.getOfflinePlayer(targetId).getName() : targetId.toString());
+                            .orElseGet(() -> {
+                                String name = Bukkit.getOfflinePlayer(targetId).getName();
+                                return name != null ? name : targetId.toString();
+                            });
 
                     RatingSession session = new RatingSession(playerId, targetId, System.currentTimeMillis());
                     plugin.getGUIManager().addRatingSession(playerId, session);
@@ -324,18 +329,17 @@ public class TeleportRequestManager {
         long expiry = System.currentTimeMillis() + (immunitySeconds * 1000L);
         immunePlayers.put(playerId, expiry);
 
-        Map<String, String> ph = new HashMap<>();
-        ph.put("time", String.valueOf(immunitySeconds));
         MessageUtil.sendMessageWithPlaceholders(player,
                 plugin.getConfigManager().getPrefix()
-                + plugin.getConfigManager().getMessage("immunity.applied", ph));
+                + plugin.getConfigManager().getMessage("immunity.applied",
+                        Map.of("time", String.valueOf(immunitySeconds))));
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             Long stored = immunePlayers.get(playerId);
             if (stored != null && stored <= System.currentTimeMillis()) {
                 immunePlayers.remove(playerId);
                 Player p = Bukkit.getPlayer(playerId);
-                if (p != null && p.isOnline()) {
+                if (p != null) {
                     MessageUtil.sendMessageWithPlaceholders(p,
                             plugin.getConfigManager().getPrefix()
                             + plugin.getConfigManager().getMessage("immunity.expired"));
@@ -361,11 +365,10 @@ public class TeleportRequestManager {
     }
 
     public List<UUID> getPendingRequestsFor(UUID playerId) {
-        List<UUID> list = new ArrayList<>();
-        for (Map.Entry<UUID, TPARequest> e : activeRequests.entrySet()) {
-            if (e.getValue().getTargetId().equals(playerId)) list.add(e.getKey());
-        }
-        return list;
+        return activeRequests.entrySet().stream()
+                .filter(e -> e.getValue().getTargetId().equals(playerId))
+                .map(Map.Entry::getKey)
+                .toList();
     }
 
     public List<UUID> getSentRequestsBy(UUID playerId) {
@@ -378,7 +381,7 @@ public class TeleportRequestManager {
     }
 
     public Set<UUID> getPendingTeleports() {
-        return new HashSet<>(pendingTeleports.keySet());
+        return Set.copyOf(pendingTeleports.keySet());
     }
 
     public void cleanupExpiredRequests() {
@@ -389,7 +392,7 @@ public class TeleportRequestManager {
                 UUID requesterId = e.getKey();
                 requesterToTarget.remove(requesterId); // leak fix
                 Player requester = Bukkit.getPlayer(requesterId);
-                if (requester != null && requester.isOnline()) {
+                if (requester != null) {
                     MessageUtil.sendMessageWithPlaceholders(requester,
                             plugin.getConfigManager().getPrefix()
                             + plugin.getConfigManager().getMessage("requests.expired"));
@@ -421,37 +424,38 @@ public class TeleportRequestManager {
         private final Player player;
         private final Location destination;
         private final Location startLocation;
+        private final TeleportRequestManager manager;
         private int remainingSeconds;
         private BukkitTask task;
 
         public PendingTeleport(Player player, Location destination,
-                               Location startLocation, int delaySeconds) {
+                               Location startLocation, int delaySeconds,
+                               TeleportRequestManager manager) {
             this.player           = player;
             this.destination      = destination;
             this.startLocation    = startLocation;
             this.remainingSeconds = delaySeconds;
+            this.manager          = manager;
         }
 
         public void tick() {
             if (!player.isOnline()) { cancel(); return; }
 
-            PaperTpa plugin = PaperTpa.getInstance();
             Location cur = player.getLocation();
             if (cur.getWorld() != startLocation.getWorld()
                     || cur.distance(startLocation) > 0.5) {
                 MessageUtil.sendMessageWithPlaceholders(player,
-                        plugin.getConfigManager().getPrefix()
-                        + plugin.getConfigManager().getMessage("teleport.cancelled-moved"));
+                        manager.plugin.getConfigManager().getPrefix()
+                        + manager.plugin.getConfigManager().getMessage("teleport.cancelled-moved"));
                 cancel();
                 return;
             }
 
             if (remainingSeconds > 0) {
-                Map<String, String> ph = new HashMap<>();
-                ph.put("time", String.valueOf(remainingSeconds));
                 MessageUtil.sendMessageWithPlaceholders(player,
-                        plugin.getConfigManager().getPrefix()
-                        + plugin.getConfigManager().getMessage("teleport.countdown", ph));
+                        manager.plugin.getConfigManager().getPrefix()
+                        + manager.plugin.getConfigManager().getMessage("teleport.countdown",
+                                Map.of("time", String.valueOf(remainingSeconds))));
                 SoundUtil.play(player, "teleport-countdown");
             }
 
@@ -461,21 +465,18 @@ public class TeleportRequestManager {
 
         private void complete() {
             if (task != null) task.cancel();
-            TeleportRequestManager mgr = PaperTpa.getInstance().getTeleportManager();
-            mgr.removePendingTeleport(player.getUniqueId());
-            mgr.performTeleport(player, destination);
+            manager.removePendingTeleport(player.getUniqueId());
+            manager.performTeleport(player, destination);
         }
 
         public void cancel() {
             if (task != null) task.cancel();
-            TeleportRequestManager mgr = PaperTpa.getInstance().getTeleportManager();
-            mgr.removePendingTeleport(player.getUniqueId());
-            mgr.cleanupRequesterTarget(player.getUniqueId());
+            manager.removePendingTeleport(player.getUniqueId());
+            manager.cleanupRequesterTarget(player.getUniqueId());
             if (player.isOnline()) {
-                PaperTpa plugin = PaperTpa.getInstance();
                 MessageUtil.sendMessageWithPlaceholders(player,
-                        plugin.getConfigManager().getPrefix()
-                        + plugin.getConfigManager().getMessage("teleport.cancelled"));
+                        manager.plugin.getConfigManager().getPrefix()
+                        + manager.plugin.getConfigManager().getMessage("teleport.cancelled"));
                 SoundUtil.play(player, "teleport-cancelled");
             }
         }
