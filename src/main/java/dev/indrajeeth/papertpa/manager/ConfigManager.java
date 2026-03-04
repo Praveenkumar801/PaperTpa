@@ -8,6 +8,8 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Map;
 import java.util.logging.Level;
@@ -29,12 +31,37 @@ public class ConfigManager {
             plugin.saveDefaultConfig();
         }
         config = plugin.getConfig();
+        applyBundledDefaults(config, "config.yml");
 
         messagesFile = new File(plugin.getDataFolder(), "messages.yml");
         if (!messagesFile.exists()) {
             saveDefaultMessages();
         }
         messages = YamlConfiguration.loadConfiguration(messagesFile);
+        applyBundledDefaults(messages, "messages.yml");
+    }
+
+    /**
+     * Loads the bundled resource YAML and sets it as the default provider on
+     * {@code cfg}. This means any key absent from the server's on-disk file will
+     * transparently fall back to the value shipped with the plugin jar, so old
+     * installs continue to work correctly after the plugin is updated with new keys.
+     */
+    private void applyBundledDefaults(FileConfiguration cfg, String resourceName) {
+        try (InputStream in = plugin.getResource(resourceName)) {
+            if (in == null) {
+                plugin.getLogger().warning(
+                        "Bundled resource '" + resourceName + "' not found in jar — "
+                        + "default fallback values will not be available.");
+                return;
+            }
+            YamlConfiguration bundled = YamlConfiguration.loadConfiguration(
+                    new InputStreamReader(in, StandardCharsets.UTF_8));
+            cfg.setDefaults(bundled);
+        } catch (IOException e) {
+            plugin.getLogger().log(Level.WARNING,
+                    "Could not load bundled defaults from " + resourceName, e);
+        }
     }
 
     private void saveDefaultMessages() {
@@ -55,7 +82,9 @@ public class ConfigManager {
     public void reload() {
         plugin.reloadConfig();
         config = plugin.getConfig();
+        applyBundledDefaults(config, "config.yml");
         messages = YamlConfiguration.loadConfiguration(messagesFile);
+        applyBundledDefaults(messages, "messages.yml");
     }
 
     public FileConfiguration getConfig() {
@@ -102,17 +131,34 @@ public class ConfigManager {
         return config.getBoolean("settings.capture-location-on-accept", true);
     }
 
+    public int getTpImmunity() {
+        return config.getInt("settings.tp-immunity", 0);
+    }
+
+    public boolean isTpIdleEnabled() {
+        return config.getBoolean("settings.tp-idle.enabled", false);
+    }
+
+    public int getTpIdleTime() {
+        return config.getInt("settings.tp-idle.time", 5);
+    }
+
     /**
      * Returns the ConfigurationSection for a GUI item path, e.g.
      * {@code "gui.request.accept-item"}.
-     * Returns {@code null} when the path doesn't exist.
+     * Returns {@code null} when the path doesn't exist in either the server
+     * config or the bundled defaults.
      */
     public ConfigurationSection getGuiSection(String path) {
         return config.getConfigurationSection(path);
     }
 
     public String getMessage(String path) {
-        return messages.getString(path, "&cMessage not found: " + path);
+        // With bundled defaults applied, getString will never return null for a
+        // key that exists in the shipped messages.yml; the explicit fallback
+        // only fires for truly unknown paths.
+        String value = messages.getString(path);
+        return value != null ? value : "&cMessage not found: " + path;
     }
 
     public String getMessage(String path, Map<String, String> placeholders) {

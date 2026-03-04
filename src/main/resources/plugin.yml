@@ -59,6 +59,11 @@ commands:
     usage: /tprate
     permission: papertpa.tpa
     permission-message: "&cYou don't have permission. Required: papertpa.tpa"
+  tpstats:
+    description: View your own TPA statistics
+    usage: /tpstats [player]
+    permission: papertpa.tpa
+    permission-message: "&cYou don't have permission. Required: papertpa.tpa"
   papertpa:
     description: PaperTpa admin commands
     usage: /papertpa reload
@@ -93,6 +98,12 @@ permissions:
   papertpa.delay.bypass:
     description: Skip the warmup countdown before teleporting
     default: op
+  papertpa.stats.others:
+    description: View other players' TPA statistics via /tpstats <player>
+    default: op
+  papertpa.immunity.bypass:
+    description: This player's attacks can still hit post-teleport immune players
+    default: op
   papertpa.*:
     description: All PaperTpa permissions
     default: op
@@ -106,3 +117,5 @@ permissions:
       papertpa.bypass: true
       papertpa.cooldown.bypass: true
       papertpa.delay.bypass: true
+      papertpa.stats.others: true
+      papertpa.immunity.bypass: true

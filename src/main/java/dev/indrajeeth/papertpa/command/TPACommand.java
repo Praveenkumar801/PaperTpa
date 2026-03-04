@@ -99,31 +99,12 @@ public class TPACommand extends SimpleCommandHandler {
     }
 
     private void sendInteractiveRequest(Player target, Player requester) {
-        Component acceptButton = net.kyori.adventure.text.Component.text()
-            .content("[Accept]")
-            .color(net.kyori.adventure.text.format.NamedTextColor.GREEN)
-            .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/tpaccept " + requester.getName()))
+        Component viewButton = MessageUtil.toComponent(configManager.getMessage("ui.button.view"))
+            .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/tpaview " + requester.getName()))
             .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
-                MessageUtil.toComponent(configManager.getMessage("ui.hover.accept"))
-            ))
-            .build();
-
-        Component denyButton = net.kyori.adventure.text.Component.text()
-            .content("[Deny]")
-            .color(net.kyori.adventure.text.format.NamedTextColor.RED)
-            .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/tpdeny " + requester.getName()))
-            .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
-                MessageUtil.toComponent(configManager.getMessage("ui.hover.deny"))
-            ))
-            .build();
-
-        Component message = net.kyori.adventure.text.Component.text()
-            .append(acceptButton)
-            .append(net.kyori.adventure.text.Component.text(" "))
-            .append(denyButton)
-            .build();
-
-        target.sendMessage(message);
+                MessageUtil.toComponent(configManager.getMessage("ui.hover.view"))
+            ));
+        target.sendMessage(viewButton);
     }
 }
 

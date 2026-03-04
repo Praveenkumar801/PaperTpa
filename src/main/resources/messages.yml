@@ -20,6 +20,12 @@ commands:
   tpdeny:
     usage: "&cUsage: /tpdeny [player]"
 
+  tpaview:
+    usage: "&cUsage: /tpaview <player>"
+
+  tpstats:
+    usage: "&cUsage: /tpstats [player]"
+
 # Request messages
 requests:
   sent: "&aYou have sent a teleport request to &e%player%&a."
@@ -35,6 +41,7 @@ requests:
   denied-target: "&cYou denied &e%player%&c's teleport request."
   cancelled: "&aYour teleport request has been cancelled."
   player-offline: "&cThe player who sent the request is no longer online!"
+  gui-not-active: "&cThis request is no longer active."
 
 # Teleport messages
 teleport:
@@ -53,18 +60,30 @@ teleport:
 cooldown:
   message: "&cYou must wait &e%time% &cseconds before sending another request!"
 
-# Toggle messages
+# Toggle messages (used by /tptoggle)
 toggle:
   enabled: "&aTeleport requests have been &2enabled&a."
   disabled: "&cTeleport requests have been &4disabled&c."
   target-has-tp-disabled: "&c%player% has teleport requests disabled."
 
+# Notification toggle messages (used by /tpnotify)
+notify:
+  enabled: "&aPost-teleport rating notifications &2enabled&a."
+  disabled: "&cPost-teleport rating notifications &4disabled&c."
+
+# Auto-accept toggle messages (used by /tpauto)
+auto:
+  enabled: "&aAuto-accept has been &2enabled&a. All incoming requests will be accepted automatically."
+  disabled: "&cAuto-accept has been &4disabled&c."
+
 # Interactive UI messages
 ui:
   button:
+    view: "&e[View Request]"
     accept: "&a[Accept]"
     deny: "&c[Deny]"
   hover:
+    view: "&eClick to view the teleport request details"
     accept: "&aClick to accept the teleport request"
     deny: "&cClick to deny the teleport request"
 
@@ -79,3 +98,17 @@ admin:
   config-reloading: "&eReloading EasyTPA configuration..."
   config-reloaded: "&aConfiguration has been reloaded successfully!"
   nothing-to-cancel: "&cYou have nothing to cancel."
+
+# Post-teleport immunity messages
+immunity:
+  applied: "&aYou have been granted &e%time% seconds &aof post-teleport immunity."
+  expired: "&7Your post-teleport immunity has expired."
+
+# Rating messages
+rating:
+  prompt: "&eHow was your teleport experience?"
+  rate-button: "&e[Rate]"
+  click-to-rate-hover: "&eClick to open the rating GUI"
+  submitted: "&aYou rated &e%player% &a%stars% star(s). Thank you!"
+  expired: "&cYour rating session has expired."
+

@@ -23,6 +23,14 @@ settings:
   enable-sounds: true
   # Freeze destination location at the moment of acceptance
   capture-location-on-accept: true
+  # Seconds of post-teleport immunity from entity damage (0 = disabled)
+  tp-immunity: 30
+  # Require the teleporting player to stand idle before the TP fires
+  tp-idle:
+    # Set to true to enable the idle check (only applies when teleport-delay is 0)
+    enabled: false
+    # Seconds the player must stand still before the teleport executes
+    time: 5
 
 # ─────────────────────────────────────────────
 #  Notification sounds
@@ -107,9 +115,16 @@ gui:
   request:
     title: "&6Teleport Request"
     size: 27
+    # Slot for the requester's player head
+    requester-slot: 4
     accept-slot: 11
-    deny-slot: 15
     info-slot: 13
+    deny-slot: 15
+    requester-item:
+      name: "&e%player%"
+      lore:
+        - "&7Location: &f%x%, %y%, %z%"
+        - "&7Dimension: &f%dimension%"
     accept-item:
       # Vanilla material fallback
       material: LIME_STAINED_GLASS_PANE
