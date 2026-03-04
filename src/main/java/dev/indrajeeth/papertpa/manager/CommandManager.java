@@ -4,8 +4,12 @@ import dev.indrajeeth.papertpa.PaperTpa;
 import dev.indrajeeth.papertpa.command.*;
 import org.bukkit.command.PluginCommand;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class CommandManager {
     private final PaperTpa plugin;
+    private final Map<String, SimpleCommandHandler> handlers = new HashMap<>();
 
     public CommandManager(PaperTpa plugin) {
         this.plugin = plugin;
@@ -28,7 +32,13 @@ public class CommandManager {
         plugin.getLogger().info("Registered all commands.");
     }
 
+    /** Returns the handler for the given command name, or {@code null} if not registered. */
+    public SimpleCommandHandler getHandler(String name) {
+        return handlers.get(name);
+    }
+
     private void register(String name, SimpleCommandHandler handler) {
+        handlers.put(name, handler);
         PluginCommand cmd = plugin.getCommand(name);
         if (cmd != null) {
             cmd.setExecutor(handler);
