@@ -33,6 +33,7 @@ public class TeleportRequestManager {
     /** Extra grace period to retain expired cooldown entries before purging. */
     private static final long COOLDOWN_GRACE_PERIOD_MS = 60_000L;
 
+    public TeleportRequestManager(PaperTpa plugin, DatabaseManager database) {
         this.plugin   = plugin;
         this.database = database;
     }
