@@ -33,7 +33,9 @@ public class RatingGUI implements InventoryHolder {
         this.session = session;
 
         ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.rating");
-        String title = cfg != null ? cfg.getString("title", "&6Rate your experience") : "&6Rate your experience";
+        String title = cfg != null
+                ? cfg.getString("title", plugin.getConfigManager().getMessage("gui.titles.rating"))
+                : plugin.getConfigManager().getMessage("gui.titles.rating");
         int size     = cfg != null ? cfg.getInt("size", 27) : 27;
 
         this.inventory = Bukkit.createInventory(this, size,
@@ -80,10 +82,10 @@ public class RatingGUI implements InventoryHolder {
             return ItemResolver.resolve(starCfg, Map.of("stars", String.valueOf(stars)));
         }
 
-        String nameKey = filled ? "gui.fallback.rating.star-filled" : "gui.fallback.rating.star-empty";
+        String nameKey = filled ? "gui.rating.star-filled" : "gui.rating.star-empty";
         String name = plugin.getConfigManager().getMessage(nameKey,
                 Map.of("stars", String.valueOf(stars)));
-        String loreStr = plugin.getConfigManager().getMessage("gui.fallback.rating.star-lore",
+        String loreStr = plugin.getConfigManager().getMessage("gui.rating.star-lore",
                 Map.of("stars", String.valueOf(stars)));
 
         Material mat  = filled ? Material.GOLDEN_SWORD : Material.STONE_SWORD;
@@ -109,7 +111,7 @@ public class RatingGUI implements InventoryHolder {
         ItemStack item = new ItemStack(mat);
         ItemMeta  meta = item.getItemMeta();
         if (meta != null) {
-            String trapName = plugin.getConfigManager().getMessage("gui.fallback.rating.trap-name",
+            String trapName = plugin.getConfigManager().getMessage("gui.rating.trap-name",
                     Map.of("state", stateMsg));
             meta.displayName(MessageUtil.toComponent(trapName));
             item.setItemMeta(meta);
@@ -126,7 +128,7 @@ public class RatingGUI implements InventoryHolder {
         ItemStack item = new ItemStack(mat);
         ItemMeta  meta = item.getItemMeta();
         if (meta != null) {
-            String msgKey = ready ? "gui.fallback.rating.confirm-ready" : "gui.fallback.rating.confirm-not-ready";
+            String msgKey = ready ? "gui.rating.confirm-ready" : "gui.rating.confirm-not-ready";
             meta.displayName(MessageUtil.toComponent(plugin.getConfigManager().getMessage(msgKey)));
             item.setItemMeta(meta);
         }

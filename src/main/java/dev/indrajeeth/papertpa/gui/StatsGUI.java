@@ -31,7 +31,8 @@ public class StatsGUI implements InventoryHolder {
 
         ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.player-info");
         String rawTitle = cfg != null
-                ? cfg.getString("title", "&6Player Info — &e%player%") : "&6Player Info — &e%player%";
+                ? cfg.getString("title", plugin.getConfigManager().getMessage("gui.titles.stats"))
+                : plugin.getConfigManager().getMessage("gui.titles.stats");
         String title = rawTitle.replace("%player%", targetName);
         int size = cfg != null ? cfg.getInt("size", 27) : 27;
 
@@ -71,7 +72,8 @@ public class StatsGUI implements InventoryHolder {
 
         ConfigurationSection itemCfg = cfg != null ? cfg.getConfigurationSection("stats-item") : null;
         String displayName = itemCfg != null
-                ? itemCfg.getString("name", "&e%player%") : "&e%player%";
+                ? itemCfg.getString("name", plugin.getConfigManager().getMessage("gui.stats.head-name"))
+                : plugin.getConfigManager().getMessage("gui.stats.head-name");
         meta.displayName(MessageUtil.toComponent(displayName.replace("%player%", name)));
 
         java.util.List<net.kyori.adventure.text.Component> lore = new java.util.ArrayList<>();
@@ -95,13 +97,13 @@ public class StatsGUI implements InventoryHolder {
             }
         }
         if (lore.isEmpty()) {
-            String sent     = plugin.getConfigManager().getMessage("gui.fallback.stats.sent",
+            String sent     = plugin.getConfigManager().getMessage("gui.stats.sent",
                     java.util.Map.of("tpa_sent", String.valueOf(stats.totalSent)));
-            String received = plugin.getConfigManager().getMessage("gui.fallback.stats.received",
+            String received = plugin.getConfigManager().getMessage("gui.stats.received",
                     java.util.Map.of("tpa_received", String.valueOf(stats.totalReceived)));
-            String accepted = plugin.getConfigManager().getMessage("gui.fallback.stats.accepted",
+            String accepted = plugin.getConfigManager().getMessage("gui.stats.accepted",
                     java.util.Map.of("tpa_accepted", String.valueOf(stats.totalAccepted)));
-            String denied   = plugin.getConfigManager().getMessage("gui.fallback.stats.denied",
+            String denied   = plugin.getConfigManager().getMessage("gui.stats.denied",
                     java.util.Map.of("tpa_denied", String.valueOf(stats.totalDenied)));
             lore.add(MessageUtil.toComponent(sent));
             lore.add(MessageUtil.toComponent(received));

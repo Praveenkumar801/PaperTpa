@@ -94,55 +94,63 @@ rating:
   submitted: "&aYou rated &e%player% &a%stars% star(s). Thank you!"
   expired: "&cYour rating session has expired."
 
-# GUI fallback strings — used when a config.yml section is missing or lore is empty
+# GUI strings — edit these to customise every item name, lore line, and label shown in GUIs
 gui:
+  # Inventory titles
+  titles:
+    request: "&6Teleport Request"
+    stats: "&6Player Info — &e%player%"
+    settings: "&6Your TPA Settings"
+    rating: "&6Rate your experience"
   # Reputation tier label substituted for %tpa_reputation_tier% in stats lore
   reputation:
     unrated: "&7Unrated"
     suspicious: "&cSuspicious"
     trusted: "&aTrusted"
     neutral: "&eNeutral"
-  # State labels substituted for %state% in the trap-report toggle item
+  # ON / OFF state labels substituted for %state% in the trap-report toggle item
   state:
     on: "&cON"
     off: "&aOFF"
-  # Fallback item names / lore when gui.request config section is absent
-  fallback:
-    request:
-      location: "&7Location: &f%x%, %y%, %z%"
-      dimension: "&7Dimension: &f%dimension%"
-      trap-percent: "&7Trap %%: &f%tpa_trap_percent%%%"
-      rating: "&7Rating: &f%tpa_rating% ⭐"
-    # Fallback lore when gui.player-info config section is absent
-    stats:
-      sent: "&7Sent: &f%tpa_sent%"
-      received: "&7Received: &f%tpa_received%"
-      accepted: "&7Accepted: &f%tpa_accepted%"
-      denied: "&7Denied: &f%tpa_denied%"
-    # Fallback lore when gui.settings head-item config section is absent
-    settings:
-      sent: "&7Sent: &f%tpa_sent%"
-      received: "&7Received: &f%tpa_received%"
-      rating: "&7Rating: &f%tpa_rating% ⭐"
-    # Fallback item names / lore when gui.rating config section is absent
-    rating:
-      star-filled: "&e%stars% ⭐"
-      star-empty: "&7%stars% ⭐"
-      star-lore: "&7Click to select %stars% star(s)"
-      trap-name: "&c\uD83D\uDEA9 Report Trap: %state%"
-      confirm-ready: "&aConfirm Rating"
-      confirm-not-ready: "&7Select stars first"
-    # Fallback toggle button names / lore when gui.settings config section is absent
-    settings-toggle:
-      tp-requests-on: "&aTeleport Requests: &2ON"
-      tp-requests-off: "&cTeleport Requests: &4OFF"
-      tp-requests-lore-on: "&7Click to &cdisable &7TP requests."
-      tp-requests-lore-off: "&7Click to &aenable &7TP requests."
-      autotp-on: "&aAuto-Accept TP: &2ON"
-      autotp-off: "&cAuto-Accept TP: &4OFF"
-      autotp-lore-on: "&7Click to &cdisable &7auto-accept."
-      autotp-lore-off: "&7Click to &aenable &7auto-accept."
-      notifications-on: "&aRating Notifications: &2ON"
-      notifications-off: "&cRating Notifications: &4OFF"
-      notifications-lore-on: "&7Click to &cdisable &7rating prompts."
-      notifications-lore-off: "&7Click to &aenable &7rating prompts."
+  # Request GUI (shown to the TPA target)
+  request:
+    head-name: "&e%player%"
+    accept-name: "&aAccept"
+    deny-name: "&cDeny"
+    location: "&7Location: &f%x%, %y%, %z%"
+    dimension: "&7Dimension: &f%dimension%"
+    trap-percent: "&7Trap %%: &f%tpa_trap_percent%%%"
+    rating: "&7Rating: &f%tpa_rating% ⭐"
+  # Stats / player-info GUI
+  stats:
+    head-name: "&e%player%"
+    sent: "&7Sent: &f%tpa_sent%"
+    received: "&7Received: &f%tpa_received%"
+    accepted: "&7Accepted: &f%tpa_accepted%"
+    denied: "&7Denied: &f%tpa_denied%"
+  # Settings GUI (/tpsettings)
+  settings:
+    head-name: "&e%player%"
+    head-sent: "&7Sent: &f%tpa_sent%"
+    head-received: "&7Received: &f%tpa_received%"
+    head-rating: "&7Rating: &f%tpa_rating% ⭐"
+    tp-requests-on: "&aTeleport Requests: &2ON"
+    tp-requests-off: "&cTeleport Requests: &4OFF"
+    tp-requests-lore-on: "&7Click to &cdisable &7TP requests."
+    tp-requests-lore-off: "&7Click to &aenable &7TP requests."
+    autotp-on: "&aAuto-Accept TP: &2ON"
+    autotp-off: "&cAuto-Accept TP: &4OFF"
+    autotp-lore-on: "&7Click to &cdisable &7auto-accept."
+    autotp-lore-off: "&7Click to &aenable &7auto-accept."
+    notifications-on: "&aRating Notifications: &2ON"
+    notifications-off: "&cRating Notifications: &4OFF"
+    notifications-lore-on: "&7Click to &cdisable &7rating prompts."
+    notifications-lore-off: "&7Click to &aenable &7rating prompts."
+  # Rating GUI
+  rating:
+    star-filled: "&e%stars% ⭐"
+    star-empty: "&7%stars% ⭐"
+    star-lore: "&7Click to select %stars% star(s)"
+    trap-name: "&c\uD83D\uDEA9 Report Trap: %state%"
+    confirm-ready: "&aConfirm Rating"
+    confirm-not-ready: "&7Select stars first"

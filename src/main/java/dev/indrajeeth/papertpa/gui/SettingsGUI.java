@@ -56,7 +56,8 @@ public class SettingsGUI implements InventoryHolder {
 
         ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.settings");
         String rawTitle = cfg != null
-                ? cfg.getString("title", "&6Your TPA Settings") : "&6Your TPA Settings";
+                ? cfg.getString("title", plugin.getConfigManager().getMessage("gui.titles.settings"))
+                : plugin.getConfigManager().getMessage("gui.titles.settings");
         int size = cfg != null ? cfg.getInt("size", 27) : 27;
 
         this.inventory = Bukkit.createInventory(this, size,
@@ -104,30 +105,30 @@ public class SettingsGUI implements InventoryHolder {
                 ? cfg.getInt("tp-requests-slot", DEFAULT_TP_REQUESTS_SLOT) : DEFAULT_TP_REQUESTS_SLOT;
         inventory.setItem(reqSlot, buildToggleItem(plugin, cfg,
                 requestsEnabled, "tp-requests-enabled-item", "tp-requests-disabled-item",
-                "gui.fallback.settings-toggle.tp-requests-on",
-                "gui.fallback.settings-toggle.tp-requests-off",
-                "gui.fallback.settings-toggle.tp-requests-lore-on",
-                "gui.fallback.settings-toggle.tp-requests-lore-off"));
+                "gui.settings.tp-requests-on",
+                "gui.settings.tp-requests-off",
+                "gui.settings.tp-requests-lore-on",
+                "gui.settings.tp-requests-lore-off"));
 
         // Auto-Accept toggle
         int autoSlot = cfg != null
                 ? cfg.getInt("autotp-slot", DEFAULT_AUTOTP_SLOT) : DEFAULT_AUTOTP_SLOT;
         inventory.setItem(autoSlot, buildToggleItem(plugin, cfg,
                 autoAccept, "autotp-enabled-item", "autotp-disabled-item",
-                "gui.fallback.settings-toggle.autotp-on",
-                "gui.fallback.settings-toggle.autotp-off",
-                "gui.fallback.settings-toggle.autotp-lore-on",
-                "gui.fallback.settings-toggle.autotp-lore-off"));
+                "gui.settings.autotp-on",
+                "gui.settings.autotp-off",
+                "gui.settings.autotp-lore-on",
+                "gui.settings.autotp-lore-off"));
 
         // Rating Notifications toggle
         int notifSlot = cfg != null
                 ? cfg.getInt("notifications-slot", DEFAULT_NOTIFICATIONS_SLOT) : DEFAULT_NOTIFICATIONS_SLOT;
         inventory.setItem(notifSlot, buildToggleItem(plugin, cfg,
                 notificationsEnabled, "notifications-enabled-item", "notifications-disabled-item",
-                "gui.fallback.settings-toggle.notifications-on",
-                "gui.fallback.settings-toggle.notifications-off",
-                "gui.fallback.settings-toggle.notifications-lore-on",
-                "gui.fallback.settings-toggle.notifications-lore-off"));
+                "gui.settings.notifications-on",
+                "gui.settings.notifications-off",
+                "gui.settings.notifications-lore-on",
+                "gui.settings.notifications-lore-off"));
     }
 
     private static ItemStack buildHeadItem(PaperTpa plugin, ConfigurationSection cfg,
@@ -141,7 +142,8 @@ public class SettingsGUI implements InventoryHolder {
         String ratingStr = stats.totalRatings > 0 ? String.format("%.1f", stats.averageRating) : "0";
 
         String displayName = itemCfg != null
-                ? itemCfg.getString("name", "&e%player%") : "&e%player%";
+                ? itemCfg.getString("name", plugin.getConfigManager().getMessage("gui.settings.head-name"))
+                : plugin.getConfigManager().getMessage("gui.settings.head-name");
         meta.displayName(MessageUtil.toComponent(displayName.replace("%player%", viewer.getName())));
 
         List<net.kyori.adventure.text.Component> lore = new ArrayList<>();
@@ -158,13 +160,13 @@ public class SettingsGUI implements InventoryHolder {
         }
         if (lore.isEmpty()) {
             lore.add(MessageUtil.toComponent(
-                    plugin.getConfigManager().getMessage("gui.fallback.settings.sent",
+                    plugin.getConfigManager().getMessage("gui.settings.head-sent",
                             java.util.Map.of("tpa_sent", String.valueOf(stats.totalSent)))));
             lore.add(MessageUtil.toComponent(
-                    plugin.getConfigManager().getMessage("gui.fallback.settings.received",
+                    plugin.getConfigManager().getMessage("gui.settings.head-received",
                             java.util.Map.of("tpa_received", String.valueOf(stats.totalReceived)))));
             lore.add(MessageUtil.toComponent(
-                    plugin.getConfigManager().getMessage("gui.fallback.settings.rating",
+                    plugin.getConfigManager().getMessage("gui.settings.head-rating",
                             java.util.Map.of("tpa_rating", ratingStr))));
         }
         meta.lore(lore);
