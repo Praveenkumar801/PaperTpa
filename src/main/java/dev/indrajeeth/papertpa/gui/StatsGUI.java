@@ -31,7 +31,8 @@ public class StatsGUI implements InventoryHolder {
 
         ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.player-info");
         String rawTitle = cfg != null
-                ? cfg.getString("title", "&6Player Info — &e%player%") : "&6Player Info — &e%player%";
+                ? cfg.getString("title", plugin.getConfigManager().getMessage("gui.titles.stats"))
+                : plugin.getConfigManager().getMessage("gui.titles.stats");
         String title = rawTitle.replace("%player%", targetName);
         int size = cfg != null ? cfg.getInt("size", 27) : 27;
 
@@ -71,7 +72,8 @@ public class StatsGUI implements InventoryHolder {
 
         ConfigurationSection itemCfg = cfg != null ? cfg.getConfigurationSection("stats-item") : null;
         String displayName = itemCfg != null
-                ? itemCfg.getString("name", "&e%player%") : "&e%player%";
+                ? itemCfg.getString("name", plugin.getConfigManager().getMessage("gui.stats.head-name"))
+                : plugin.getConfigManager().getMessage("gui.stats.head-name");
         meta.displayName(MessageUtil.toComponent(displayName.replace("%player%", name)));
 
         java.util.List<net.kyori.adventure.text.Component> lore = new java.util.ArrayList<>();
@@ -79,7 +81,7 @@ public class StatsGUI implements InventoryHolder {
             String ratingStr = stats.totalRatings > 0
                     ? String.format("%.1f", stats.averageRating) : "0";
             String trapStr   = String.format("%.1f", stats.trapPercent);
-            String tierStr   = getReputationTier(stats);
+            String tierStr   = getReputationTier(plugin, stats);
             for (String line : itemCfg.getStringList("lore")) {
                 line = line
                     .replace("%player%",               name)
@@ -95,21 +97,33 @@ public class StatsGUI implements InventoryHolder {
             }
         }
         if (lore.isEmpty()) {
-            lore.add(MessageUtil.toComponent("&7Sent:     &f" + stats.totalSent));
-            lore.add(MessageUtil.toComponent("&7Received: &f" + stats.totalReceived));
-            lore.add(MessageUtil.toComponent("&7Accepted: &f" + stats.totalAccepted));
-            lore.add(MessageUtil.toComponent("&7Denied:   &f" + stats.totalDenied));
+            String sent     = plugin.getConfigManager().getMessage("gui.stats.sent",
+                    java.util.Map.of("tpa_sent", String.valueOf(stats.totalSent)));
+            String received = plugin.getConfigManager().getMessage("gui.stats.received",
+                    java.util.Map.of("tpa_received", String.valueOf(stats.totalReceived)));
+            String accepted = plugin.getConfigManager().getMessage("gui.stats.accepted",
+                    java.util.Map.of("tpa_accepted", String.valueOf(stats.totalAccepted)));
+            String denied   = plugin.getConfigManager().getMessage("gui.stats.denied",
+                    java.util.Map.of("tpa_denied", String.valueOf(stats.totalDenied)));
+            lore.add(MessageUtil.toComponent(sent));
+            lore.add(MessageUtil.toComponent(received));
+            lore.add(MessageUtil.toComponent(accepted));
+            lore.add(MessageUtil.toComponent(denied));
         }
         meta.lore(lore);
         skull.setItemMeta(meta);
         return skull;
     }
 
-    private static String getReputationTier(dev.indrajeeth.papertpa.model.PlayerStats stats) {
-        if (stats.totalRatings == 0) return "&7Neutral";
-        if (stats.trapPercent >= 30.0 || stats.averageRating < 2.0) return "&cSuspicious";
-        if (stats.averageRating >= 4.0 && stats.trapPercent < 5.0)  return "&aTrusted";
-        return "&eNeutral";
+    private static String getReputationTier(PaperTpa plugin,
+                                             dev.indrajeeth.papertpa.model.PlayerStats stats) {
+        if (stats.totalRatings == 0)
+            return plugin.getConfigManager().getMessage("gui.reputation.unrated");
+        if (stats.trapPercent >= 30.0 || stats.averageRating < 2.0)
+            return plugin.getConfigManager().getMessage("gui.reputation.suspicious");
+        if (stats.averageRating >= 4.0 && stats.trapPercent < 5.0)
+            return plugin.getConfigManager().getMessage("gui.reputation.trusted");
+        return plugin.getConfigManager().getMessage("gui.reputation.neutral");
     }
 
     @Override

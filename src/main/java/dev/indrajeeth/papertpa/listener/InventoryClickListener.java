@@ -1,6 +1,7 @@
 package dev.indrajeeth.papertpa.listener;
 
 import dev.indrajeeth.papertpa.PaperTpa;
+import dev.indrajeeth.papertpa.gui.SettingsGUI;
 import dev.indrajeeth.papertpa.gui.RatingGUI;
 import dev.indrajeeth.papertpa.gui.RequestGUI;
 import dev.indrajeeth.papertpa.model.RatingSession;
@@ -39,6 +40,9 @@ public class InventoryClickListener implements Listener {
         } else if (holder instanceof RatingGUI gui) {
             event.setCancelled(true);
             handleRatingClick(player, gui, event.getRawSlot());
+        } else if (holder instanceof SettingsGUI gui) {
+            event.setCancelled(true);
+            handleSettingsClick(player, gui, event.getRawSlot());
         } else if (holder instanceof dev.indrajeeth.papertpa.gui.StatsGUI) {
             event.setCancelled(true);
         }
@@ -137,5 +141,69 @@ public class InventoryClickListener implements Listener {
                     + plugin.getConfigManager().getMessage("rating.submitted", ph));
             SoundUtil.play(player, "request-accepted");
         }
+    }
+
+    private void handleSettingsClick(Player player, SettingsGUI gui, int slot) {
+        if (!gui.getViewerId().equals(player.getUniqueId())) return;
+
+        UUID playerId = player.getUniqueId();
+        int reqSlot   = gui.getTpRequestsSlot(plugin);
+        int autoSlot  = gui.getAutoTpSlot(plugin);
+        int notifSlot = gui.getNotificationsSlot(plugin);
+
+        if (slot == reqSlot) {
+            boolean next = !gui.isRequestsEnabled();
+            gui.setRequestsEnabled(next);
+            plugin.getDatabaseManager().setRequestsEnabled(playerId, next).thenRun(() ->
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (player.isOnline()) {
+                        refreshSettingsGUI(plugin, player, gui);
+                        String key = next ? "toggle.enabled" : "toggle.disabled";
+                        MessageUtil.sendMessageWithPlaceholders(player,
+                                plugin.getConfigManager().getPrefix()
+                                + plugin.getConfigManager().getMessage(key));
+                    }
+                })
+            );
+
+        } else if (slot == autoSlot) {
+            boolean next = !gui.isAutoAccept();
+            gui.setAutoAccept(next);
+            plugin.getDatabaseManager().setAutoAcceptEnabled(playerId, next).thenRun(() ->
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (player.isOnline()) {
+                        refreshSettingsGUI(plugin, player, gui);
+                        String key = next ? "auto.enabled" : "auto.disabled";
+                        MessageUtil.sendMessageWithPlaceholders(player,
+                                plugin.getConfigManager().getPrefix()
+                                + plugin.getConfigManager().getMessage(key));
+                    }
+                })
+            );
+
+        } else if (slot == notifSlot) {
+            boolean next = !gui.isNotificationsEnabled();
+            gui.setNotificationsEnabled(next);
+            plugin.getDatabaseManager().setNotificationEnabled(playerId, next).thenRun(() ->
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (player.isOnline()) {
+                        refreshSettingsGUI(plugin, player, gui);
+                        String key = next ? "notify.enabled" : "notify.disabled";
+                        MessageUtil.sendMessageWithPlaceholders(player,
+                                plugin.getConfigManager().getPrefix()
+                                + plugin.getConfigManager().getMessage(key));
+                    }
+                })
+            );
+        }
+    }
+
+    /** Fetches fresh stats then refreshes the open SettingsGUI for the player. */
+    private void refreshSettingsGUI(PaperTpa plugin, Player player, SettingsGUI gui) {
+        plugin.getDatabaseManager().getPlayerStats(player.getUniqueId()).thenAccept(stats ->
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (player.isOnline()) gui.refresh(plugin, player, stats);
+            })
+        );
     }
 }

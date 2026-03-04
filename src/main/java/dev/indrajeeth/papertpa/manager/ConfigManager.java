@@ -91,10 +91,6 @@ public class ConfigManager {
         return config;
     }
 
-    public FileConfiguration getMessages() {
-        return messages;
-    }
-
     public int getRequestTimeout() {
         return config.getInt("settings.request-timeout", 60);
     }
@@ -109,18 +105,6 @@ public class ConfigManager {
 
     public int getRatingDelay() {
         return config.getInt("settings.rating-delay", 30);
-    }
-
-    public int getTrapWindow() {
-        return config.getInt("settings.trap-window", 20);
-    }
-
-    public boolean isTpBackOnTrap() {
-        return config.getBoolean("settings.tpback-on-trap", true);
-    }
-
-    public int getMinRatingsForLeaderboard() {
-        return config.getInt("settings.min-ratings-for-leaderboard", 5);
     }
 
     public boolean areSoundsEnabled() {

@@ -35,7 +35,9 @@ public class RequestGUI implements InventoryHolder {
         this.viewerId    = viewer.getUniqueId();
 
         ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.request");
-        String title = cfg != null ? cfg.getString("title", "&6Teleport Request") : "&6Teleport Request";
+        String title = cfg != null
+                ? cfg.getString("title", plugin.getConfigManager().getMessage("gui.titles.request"))
+                : plugin.getConfigManager().getMessage("gui.titles.request");
         int size     = cfg != null ? cfg.getInt("size", 27) : 27;
 
         this.inventory = Bukkit.createInventory(this, size,
@@ -54,14 +56,16 @@ public class RequestGUI implements InventoryHolder {
         if (cfg != null) {
             inventory.setItem(acceptSlot, ItemResolver.resolve(cfg.getConfigurationSection("accept-item")));
         } else {
-            inventory.setItem(acceptSlot, quickItem(Material.LIME_STAINED_GLASS_PANE, "&aAccept"));
+            inventory.setItem(acceptSlot, quickItem(Material.LIME_STAINED_GLASS_PANE,
+                    plugin.getConfigManager().getMessage("gui.request.accept-name")));
         }
 
         int denySlot = cfg != null ? cfg.getInt("deny-slot", 15) : 15;
         if (cfg != null) {
             inventory.setItem(denySlot, ItemResolver.resolve(cfg.getConfigurationSection("deny-item")));
         } else {
-            inventory.setItem(denySlot, quickItem(Material.RED_STAINED_GLASS_PANE, "&cDeny"));
+            inventory.setItem(denySlot, quickItem(Material.RED_STAINED_GLASS_PANE,
+                    plugin.getConfigManager().getMessage("gui.request.deny-name")));
         }
     }
 
@@ -84,7 +88,9 @@ public class RequestGUI implements InventoryHolder {
                    : requesterId.toString());
 
         ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.request.requester-item");
-        String displayName = cfg != null ? cfg.getString("name", "&e%player%") : "&e%player%";
+        String displayName = cfg != null
+                ? cfg.getString("name", plugin.getConfigManager().getMessage("gui.request.head-name"))
+                : plugin.getConfigManager().getMessage("gui.request.head-name");
         displayName = displayName.replace("%player%", name);
         meta.displayName(MessageUtil.toComponent(displayName));
 
@@ -109,10 +115,20 @@ public class RequestGUI implements InventoryHolder {
             }
         }
         if (lore.isEmpty()) {
-            lore.add(MessageUtil.toComponent("&7Location: &f" + x + ", " + y + ", " + z));
-            lore.add(MessageUtil.toComponent("&7Dimension: &f" + dim));
-            lore.add(MessageUtil.toComponent("&7Trap %: &f" + trapStr + "%"));
-            lore.add(MessageUtil.toComponent("&7Rating: &f" + ratingStr + " \u2B50"));
+            lore.add(MessageUtil.toComponent(
+                    plugin.getConfigManager().getMessage("gui.request.location",
+                            java.util.Map.of("x", String.valueOf(x),
+                                             "y", String.valueOf(y),
+                                             "z", String.valueOf(z)))));
+            lore.add(MessageUtil.toComponent(
+                    plugin.getConfigManager().getMessage("gui.request.dimension",
+                            java.util.Map.of("dimension", dim))));
+            lore.add(MessageUtil.toComponent(
+                    plugin.getConfigManager().getMessage("gui.request.trap-percent",
+                            java.util.Map.of("tpa_trap_percent", trapStr))));
+            lore.add(MessageUtil.toComponent(
+                    plugin.getConfigManager().getMessage("gui.request.rating",
+                            java.util.Map.of("tpa_rating", ratingStr))));
         }
         meta.lore(lore);
         skull.setItemMeta(meta);
@@ -122,7 +138,6 @@ public class RequestGUI implements InventoryHolder {
     private static String getDimensionName(World world) {
         if (world == null) return "Unknown";
         return switch (world.getEnvironment()) {
-            case NORMAL  -> "Overworld";
             case NETHER  -> "Nether";
             case THE_END -> "The End";
             default      -> world.getName();

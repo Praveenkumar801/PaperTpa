@@ -13,12 +13,6 @@ settings:
   teleport-delay: 5
   # Seconds after landing before the rating GUI appears
   rating-delay: 30
-  # Seconds after landing in which a death counts as a trap
-  trap-window: 20
-  # Teleport the victim back if they were trapped
-  tpback-on-trap: true
-  # Minimum number of ratings before appearing on /tpa leaderboard
-  min-ratings-for-leaderboard: 5
   # Whether to play sounds on teleport events
   enable-sounds: true
   # Freeze destination location at the moment of acceptance
@@ -221,13 +215,85 @@ gui:
       name: " "
       lore: []
 
-  # GUI — Leaderboard
-  leaderboard:
-    title: "&6TPA Leaderboard"
-    size: 54
+  # GUI — Player Settings (/tpsettings)
+  settings:
+    title: "&6Your TPA Settings"
+    size: 27
+    # Slot for the player's own head / stats
+    head-slot: 4
+    # Slot for the TP-requests toggle button
+    tp-requests-slot: 10
+    # Slot for the Auto-Accept toggle button
+    autotp-slot: 13
+    # Slot for the Rating-Notifications toggle button
+    notifications-slot: 16
+    head-item:
+      material: PLAYER_HEAD
+      custom-model-data: 0
+      itemsadder: ""
+      name: "&e%player%"
+      lore:
+        - "&7Sent: &f%tpa_sent%"
+        - "&7Received: &f%tpa_received%"
+        - "&7Accepted: &f%tpa_accepted%"
+        - "&7Denied: &f%tpa_denied%"
+        - "&7Rating: &f%tpa_rating% ⭐"
+    tp-requests-enabled-item:
+      material: LIME_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+      name: "&aTeleport Requests: &2ON"
+      lore:
+        - "&7Click to &cdisable &7receiving"
+        - "&7teleport requests from others."
+    tp-requests-disabled-item:
+      material: RED_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+      name: "&cTeleport Requests: &4OFF"
+      lore:
+        - "&7Click to &aenable &7receiving"
+        - "&7teleport requests from others."
+    autotp-enabled-item:
+      material: LIME_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+      name: "&aAuto-Accept TP: &2ON"
+      lore:
+        - "&7All incoming teleport requests"
+        - "&7are accepted automatically."
+        - "&7Click to &cdisable&7."
+    autotp-disabled-item:
+      material: RED_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+      name: "&cAuto-Accept TP: &4OFF"
+      lore:
+        - "&7Incoming teleport requests"
+        - "&7require manual acceptance."
+        - "&7Click to &aenable&7."
+    notifications-enabled-item:
+      material: LIME_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+      name: "&aRating Notifications: &2ON"
+      lore:
+        - "&7You will receive a prompt to"
+        - "&7rate your teleport experience."
+        - "&7Click to &cdisable&7."
+    notifications-disabled-item:
+      material: RED_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+      name: "&cRating Notifications: &4OFF"
+      lore:
+        - "&7You will not receive rating"
+        - "&7prompts after teleporting."
+        - "&7Click to &aenable&7."
     filler-item:
       material: GRAY_STAINED_GLASS_PANE
       custom-model-data: 0
       itemsadder: ""
       name: " "
       lore: []
+

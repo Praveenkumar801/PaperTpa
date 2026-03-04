@@ -19,6 +19,8 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class TeleportRequestManager {
 
@@ -171,8 +173,8 @@ public class TeleportRequestManager {
             PendingTeleport pending = new PendingTeleport(player, destination, start, delay, this);
             pendingTeleports.put(playerId, pending);
 
-            MessageUtil.sendMessageWithPlaceholders(player,
-                cfg.getPrefix() + cfg.getMessage("teleport.starting", Map.of("time", String.valueOf(delay))));
+            MessageUtil.sendActionBar(player,
+                cfg.getMessage("teleport.starting-bar", Map.of("time", String.valueOf(delay))));
             SoundUtil.play(player, "teleport-start");
 
             BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
@@ -320,6 +322,7 @@ public class TeleportRequestManager {
     /**
      * Grants the player post-teleport immunity for the configured duration.
      * While immune, entity damage events are cancelled by {@link dev.indrajeeth.papertpa.listener.ImmunityListener}.
+     * A per-second action-bar countdown is shown while immunity is active.
      */
     public void applyImmunity(Player player) {
         int immunitySeconds = plugin.getConfigManager().getTpImmunity();
@@ -329,23 +332,29 @@ public class TeleportRequestManager {
         long expiry = System.currentTimeMillis() + (immunitySeconds * 1000L);
         immunePlayers.put(playerId, expiry);
 
-        MessageUtil.sendMessageWithPlaceholders(player,
-                plugin.getConfigManager().getPrefix()
-                + plugin.getConfigManager().getMessage("immunity.applied",
-                        Map.of("time", String.valueOf(immunitySeconds))));
-
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            Long stored = immunePlayers.get(playerId);
-            if (stored != null && stored <= System.currentTimeMillis()) {
+        AtomicInteger remaining = new AtomicInteger(immunitySeconds);
+        AtomicReference<BukkitTask> taskHolder = new AtomicReference<>();
+        taskHolder.set(Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            Player p = Bukkit.getPlayer(playerId);
+            if (p == null) {
                 immunePlayers.remove(playerId);
-                Player p = Bukkit.getPlayer(playerId);
-                if (p != null) {
-                    MessageUtil.sendMessageWithPlaceholders(p,
-                            plugin.getConfigManager().getPrefix()
-                            + plugin.getConfigManager().getMessage("immunity.expired"));
-                }
+                BukkitTask t = taskHolder.get();
+                if (t != null) t.cancel();
+                return;
             }
-        }, immunitySeconds * 20L);
+            int secs = remaining.getAndDecrement();
+            if (secs > 0) {
+                MessageUtil.sendActionBar(p,
+                        plugin.getConfigManager().getMessage("immunity.countdown",
+                                Map.of("time", String.valueOf(secs))));
+            } else {
+                immunePlayers.remove(playerId);
+                MessageUtil.sendActionBar(p,
+                        plugin.getConfigManager().getMessage("immunity.expired"));
+                BukkitTask t = taskHolder.get();
+                if (t != null) t.cancel();
+            }
+        }, 0L, 20L));
     }
 
     /** Returns true if the player currently has post-teleport immunity. */
@@ -398,12 +407,62 @@ public class TeleportRequestManager {
                             + plugin.getConfigManager().getMessage("requests.expired"));
                     SoundUtil.play(requester, "request-expired");
                 }
+                // Also notify the target that the request expired
+                UUID targetId = e.getValue().getTargetId();
+                Player target = Bukkit.getPlayer(targetId);
+                if (target != null) {
+                    MessageUtil.sendMessageWithPlaceholders(target,
+                            plugin.getConfigManager().getPrefix()
+                            + plugin.getConfigManager().getMessage("requests.expired-target"));
+                }
                 return true;
             }
             return false;
         });
         long cooldownMs = plugin.getConfigManager().getCooldown() * 1000L;
         cooldowns.entrySet().removeIf(e -> now - e.getValue() > cooldownMs + COOLDOWN_GRACE_PERIOD_MS);
+    }
+
+    /**
+     * Called when a player disconnects. Cancels their pending teleport warmup,
+     * any request they sent, and any requests that were targeting them — notifying
+     * the other party in each case.
+     */
+    public void handlePlayerQuit(Player player) {
+        UUID playerId = player.getUniqueId();
+
+        // Cancel any in-progress teleport warmup (no chat message needed; player is offline)
+        PendingTeleport pt = pendingTeleports.remove(playerId);
+        if (pt != null) {
+            pt.cancelSilently();
+        }
+
+        // Cancel a request this player sent, and tell the target
+        TPARequest sent = activeRequests.remove(playerId);
+        if (sent != null) {
+            requesterToTarget.remove(playerId);
+            Player target = Bukkit.getPlayer(sent.getTargetId());
+            if (target != null) {
+                MessageUtil.sendMessageWithPlaceholders(target,
+                        plugin.getConfigManager().getPrefix()
+                        + plugin.getConfigManager().getMessage("requests.sender-left",
+                                Map.of("player", player.getName())));
+            }
+        }
+
+        // Cancel all requests targeting this player, and tell each requester
+        List<UUID> senders = getPendingRequestsFor(playerId);
+        for (UUID senderId : senders) {
+            activeRequests.remove(senderId);
+            requesterToTarget.remove(senderId);
+            Player sender = Bukkit.getPlayer(senderId);
+            if (sender != null) {
+                MessageUtil.sendMessageWithPlaceholders(sender,
+                        plugin.getConfigManager().getPrefix()
+                        + plugin.getConfigManager().getMessage("requests.target-left",
+                                Map.of("player", player.getName())));
+            }
+        }
     }
 
     public void cancelTeleport(UUID playerId) {
@@ -452,9 +511,8 @@ public class TeleportRequestManager {
             }
 
             if (remainingSeconds > 0) {
-                MessageUtil.sendMessageWithPlaceholders(player,
-                        manager.plugin.getConfigManager().getPrefix()
-                        + manager.plugin.getConfigManager().getMessage("teleport.countdown",
+                MessageUtil.sendActionBar(player,
+                        manager.plugin.getConfigManager().getMessage("teleport.countdown-bar",
                                 Map.of("time", String.valueOf(remainingSeconds))));
                 SoundUtil.play(player, "teleport-countdown");
             }
@@ -479,6 +537,13 @@ public class TeleportRequestManager {
                         + manager.plugin.getConfigManager().getMessage("teleport.cancelled"));
                 SoundUtil.play(player, "teleport-cancelled");
             }
+        }
+
+        /** Cancels the warmup task without sending any message (used on player quit). */
+        public void cancelSilently() {
+            if (task != null) task.cancel();
+            manager.removePendingTeleport(player.getUniqueId());
+            manager.cleanupRequesterTarget(player.getUniqueId());
         }
 
         public boolean isValid()             { return player.isOnline() && remainingSeconds > 0; }

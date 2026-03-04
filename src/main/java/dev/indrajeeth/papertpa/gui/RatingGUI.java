@@ -33,7 +33,9 @@ public class RatingGUI implements InventoryHolder {
         this.session = session;
 
         ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.rating");
-        String title = cfg != null ? cfg.getString("title", "&6Rate your experience") : "&6Rate your experience";
+        String title = cfg != null
+                ? cfg.getString("title", plugin.getConfigManager().getMessage("gui.titles.rating"))
+                : plugin.getConfigManager().getMessage("gui.titles.rating");
         int size     = cfg != null ? cfg.getInt("size", 27) : 27;
 
         this.inventory = Bukkit.createInventory(this, size,
@@ -75,20 +77,24 @@ public class RatingGUI implements InventoryHolder {
     private static ItemStack buildStarItem(PaperTpa plugin, ConfigurationSection cfg,
                                             int stars, boolean filled) {
         ConfigurationSection starCfg = cfg != null ? cfg.getConfigurationSection("star-item") : null;
-        String name = starCfg != null ? starCfg.getString("name", "&e%stars% ⭐") : "&e%stars% ⭐";
-        name = name.replace("%stars%", String.valueOf(stars));
 
         if (starCfg != null) {
             return ItemResolver.resolve(starCfg, Map.of("stars", String.valueOf(stars)));
         }
 
+        String nameKey = filled ? "gui.rating.star-filled" : "gui.rating.star-empty";
+        String name = plugin.getConfigManager().getMessage(nameKey,
+                Map.of("stars", String.valueOf(stars)));
+        String loreStr = plugin.getConfigManager().getMessage("gui.rating.star-lore",
+                Map.of("stars", String.valueOf(stars)));
+
         Material mat  = filled ? Material.GOLDEN_SWORD : Material.STONE_SWORD;
         ItemStack item = new ItemStack(mat);
         ItemMeta  meta = item.getItemMeta();
         if (meta != null) {
-            meta.displayName(MessageUtil.toComponent(filled ? "&e" + stars + " ⭐" : "&7" + stars + " ⭐"));
+            meta.displayName(MessageUtil.toComponent(name));
             List<net.kyori.adventure.text.Component> lore = new ArrayList<>();
-            lore.add(MessageUtil.toComponent("&7Click to select " + stars + " star(s)"));
+            lore.add(MessageUtil.toComponent(loreStr));
             meta.lore(lore);
             item.setItemMeta(meta);
         }
@@ -97,14 +103,17 @@ public class RatingGUI implements InventoryHolder {
 
     private static ItemStack buildTrapItem(PaperTpa plugin, ConfigurationSection cfg, boolean trapOn) {
         ConfigurationSection trapCfg = cfg != null ? cfg.getConfigurationSection("trap-report-item") : null;
+        String stateMsg = plugin.getConfigManager().getMessage(trapOn ? "gui.state.on" : "gui.state.off");
         if (trapCfg != null) {
-            return ItemResolver.resolve(trapCfg, Map.of("state", trapOn ? "&cON" : "&aOFF"));
+            return ItemResolver.resolve(trapCfg, Map.of("state", stateMsg));
         }
         Material mat  = trapOn ? Material.RED_CONCRETE : Material.GREEN_CONCRETE;
         ItemStack item = new ItemStack(mat);
         ItemMeta  meta = item.getItemMeta();
         if (meta != null) {
-            meta.displayName(MessageUtil.toComponent("&c🚩 Report Trap: " + (trapOn ? "&cON" : "&aOFF")));
+            String trapName = plugin.getConfigManager().getMessage("gui.rating.trap-name",
+                    Map.of("state", stateMsg));
+            meta.displayName(MessageUtil.toComponent(trapName));
             item.setItemMeta(meta);
         }
         return item;
@@ -119,7 +128,8 @@ public class RatingGUI implements InventoryHolder {
         ItemStack item = new ItemStack(mat);
         ItemMeta  meta = item.getItemMeta();
         if (meta != null) {
-            meta.displayName(MessageUtil.toComponent(ready ? "&aConfirm Rating" : "&7Select stars first"));
+            String msgKey = ready ? "gui.rating.confirm-ready" : "gui.rating.confirm-not-ready";
+            meta.displayName(MessageUtil.toComponent(plugin.getConfigManager().getMessage(msgKey)));
             item.setItemMeta(meta);
         }
         return item;

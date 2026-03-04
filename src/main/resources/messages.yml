@@ -1,4 +1,4 @@
-# EasyTPA Messages Configuration
+# PaperTpa Messages Configuration
 # All messages support color codes and placeholders
 
 # General messages
@@ -13,18 +13,8 @@ commands:
   tpa:
     usage: "&cUsage: /tpa <player>"
     cannot-teleport-self: "&cYou cannot send a teleport request to yourself."
-
-  tpaccept:
-    usage: "&cUsage: /tpaccept [player]"
-
-  tpdeny:
-    usage: "&cUsage: /tpdeny [player]"
-
   tpaview:
     usage: "&cUsage: /tpaview <player>"
-
-  tpstats:
-    usage: "&cUsage: /tpstats [player]"
 
 # Request messages
 requests:
@@ -40,20 +30,16 @@ requests:
   denied: "&cYour teleport request has been denied."
   denied-target: "&cYou denied &e%player%&c's teleport request."
   cancelled: "&aYour teleport request has been cancelled."
-  player-offline: "&cThe player who sent the request is no longer online!"
   gui-not-active: "&cThis request is no longer active."
+  sender-left: "&cYour teleport request was cancelled because &e%player% &cleft the server."
+  target-left: "&cYour teleport request to &e%player% &cwas cancelled (they left the server)."
 
-# Teleport messages
+# Teleport messages (countdown / cancel sent via action bar)
 teleport:
-  success: "&aYou have been teleported to &e%player%&a."
   unsafe: "&cCannot teleport: The target location is unsafe!"
-  unsafe-target: "&cTeleport cancelled: The location became unsafe!"
-  starting: "&eTeleporting in &6%time% &eseconds... Don't move!"
-  starting-target: "&e%player% &eis teleporting to you in &6%time% &eseconds."
-  countdown: "&eTeleporting in &6%time% &eseconds..."
+  starting-bar: "&eTeleporting in &6%time%s&e... Don't move!"
+  countdown-bar: "&eTeleporting in &6%time%s&e..."
   cancelled-moved: "&cTeleport cancelled! You moved."
-  cancelled-moved-target: "&c%player%'s teleport was cancelled (they moved)."
-  already-pending: "&cYou already have a teleport in progress!"
   cancelled: "&aTeleport cancelled."
 
 # Cooldown messages
@@ -76,16 +62,12 @@ auto:
   enabled: "&aAuto-accept has been &2enabled&a. All incoming requests will be accepted automatically."
   disabled: "&cAuto-accept has been &4disabled&c."
 
-# Interactive UI messages
+# Interactive UI messages (chat buttons shown with request notification)
 ui:
   button:
     view: "&e[View Request]"
-    accept: "&a[Accept]"
-    deny: "&c[Deny]"
   hover:
     view: "&eClick to view the teleport request details"
-    accept: "&aClick to accept the teleport request"
-    deny: "&cClick to deny the teleport request"
 
 # Request list messages
 list:
@@ -99,10 +81,10 @@ admin:
   config-reloaded: "&aConfiguration has been reloaded successfully!"
   nothing-to-cancel: "&cYou have nothing to cancel."
 
-# Post-teleport immunity messages
+# Post-teleport immunity messages (shown on action bar)
 immunity:
-  applied: "&aYou have been granted &e%time% seconds &aof post-teleport immunity."
-  expired: "&7Your post-teleport immunity has expired."
+  countdown: "&aImmunity: &e%time%s &aremaining"
+  expired: "&7Post-teleport immunity expired."
 
 # Rating messages
 rating:
@@ -112,3 +94,63 @@ rating:
   submitted: "&aYou rated &e%player% &a%stars% star(s). Thank you!"
   expired: "&cYour rating session has expired."
 
+# GUI strings — edit these to customise every item name, lore line, and label shown in GUIs
+gui:
+  # Inventory titles
+  titles:
+    request: "&6Teleport Request"
+    stats: "&6Player Info — &e%player%"
+    settings: "&6Your TPA Settings"
+    rating: "&6Rate your experience"
+  # Reputation tier label substituted for %tpa_reputation_tier% in stats lore
+  reputation:
+    unrated: "&7Unrated"
+    suspicious: "&cSuspicious"
+    trusted: "&aTrusted"
+    neutral: "&eNeutral"
+  # ON / OFF state labels substituted for %state% in the trap-report toggle item
+  state:
+    on: "&cON"
+    off: "&aOFF"
+  # Request GUI (shown to the TPA target)
+  request:
+    head-name: "&e%player%"
+    accept-name: "&aAccept"
+    deny-name: "&cDeny"
+    location: "&7Location: &f%x%, %y%, %z%"
+    dimension: "&7Dimension: &f%dimension%"
+    trap-percent: "&7Trap %%: &f%tpa_trap_percent%%%"
+    rating: "&7Rating: &f%tpa_rating% ⭐"
+  # Stats / player-info GUI
+  stats:
+    head-name: "&e%player%"
+    sent: "&7Sent: &f%tpa_sent%"
+    received: "&7Received: &f%tpa_received%"
+    accepted: "&7Accepted: &f%tpa_accepted%"
+    denied: "&7Denied: &f%tpa_denied%"
+  # Settings GUI (/tpsettings)
+  settings:
+    head-name: "&e%player%"
+    head-sent: "&7Sent: &f%tpa_sent%"
+    head-received: "&7Received: &f%tpa_received%"
+    head-rating: "&7Rating: &f%tpa_rating% ⭐"
+    tp-requests-on: "&aTeleport Requests: &2ON"
+    tp-requests-off: "&cTeleport Requests: &4OFF"
+    tp-requests-lore-on: "&7Click to &cdisable &7TP requests."
+    tp-requests-lore-off: "&7Click to &aenable &7TP requests."
+    autotp-on: "&aAuto-Accept TP: &2ON"
+    autotp-off: "&cAuto-Accept TP: &4OFF"
+    autotp-lore-on: "&7Click to &cdisable &7auto-accept."
+    autotp-lore-off: "&7Click to &aenable &7auto-accept."
+    notifications-on: "&aRating Notifications: &2ON"
+    notifications-off: "&cRating Notifications: &4OFF"
+    notifications-lore-on: "&7Click to &cdisable &7rating prompts."
+    notifications-lore-off: "&7Click to &aenable &7rating prompts."
+  # Rating GUI
+  rating:
+    star-filled: "&e%stars% ⭐"
+    star-empty: "&7%stars% ⭐"
+    star-lore: "&7Click to select %stars% star(s)"
+    trap-name: "&c\uD83D\uDEA9 Report Trap: %state%"
+    confirm-ready: "&aConfirm Rating"
+    confirm-not-ready: "&7Select stars first"

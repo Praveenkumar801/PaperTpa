@@ -64,6 +64,11 @@ commands:
     usage: /tpstats [player]
     permission: papertpa.tpa
     permission-message: "&cYou don't have permission. Required: papertpa.tpa"
+  tpsettings:
+    description: Open your TPA settings GUI
+    usage: /tpsettings
+    permission: papertpa.tpa
+    permission-message: "&cYou don't have permission. Required: papertpa.tpa"
   papertpa:
     description: PaperTpa admin commands
     usage: /papertpa reload
