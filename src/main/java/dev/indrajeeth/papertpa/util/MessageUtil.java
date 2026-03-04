@@ -68,9 +68,4 @@ public class MessageUtil {
         }
         player.sendActionBar(toComponent(message));
     }
-
-    public static String toLegacyString(Component component) {
-        return LEGACY_SERIALIZER.serialize(component);
-    }
 }
-

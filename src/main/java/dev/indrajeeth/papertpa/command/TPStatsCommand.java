@@ -30,16 +30,13 @@ public class TPStatsCommand extends SimpleCommandHandler {
         if (!checkPermission(player, "papertpa.tpa")) return true;
 
         if (args.length == 0) {
-            // Show own stats
             plugin.getGUIManager().openStatsGUI(player, player.getUniqueId());
         } else {
-            // Show another player's stats — requires elevated permission
             if (!player.hasPermission("papertpa.stats.others")) {
                 MessageUtil.sendMessageWithPlaceholders(player,
                         configManager.getPrefix() + configManager.getMessage("general.no-permission"));
                 return true;
             }
-            // Support both online and offline players
             Player onlineTarget = Bukkit.getPlayerExact(args[0]);
             if (onlineTarget != null) {
                 plugin.getGUIManager().openStatsGUI(player, onlineTarget.getUniqueId());

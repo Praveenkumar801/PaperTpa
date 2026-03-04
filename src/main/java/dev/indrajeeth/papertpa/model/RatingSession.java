@@ -8,11 +8,11 @@ import java.util.UUID;
  */
 public final class RatingSession {
 
-    private final UUID raterUUID;   // the player who was teleported (rates the host)
-    private final UUID targetUUID;  // the host/accepter being rated
-    private final long createdAt;   // when this session was opened
+    private final UUID raterUUID;
+    private final UUID targetUUID;
+    private final long createdAt;
 
-    private int stars = 0;          // 0 = not yet chosen; 1–5 = chosen
+    private int stars = 0;
     private boolean trapReport = false;
 
     public RatingSession(UUID raterUUID, UUID targetUUID, long createdAt) {

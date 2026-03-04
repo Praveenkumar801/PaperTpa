@@ -70,6 +70,12 @@ public class GUIManager {
         ratingSessions.remove(playerId);
     }
 
+    /** Removes rating sessions older than {@code maxAgeMs} milliseconds. */
+    public void cleanupStaleSessions(long maxAgeMs) {
+        long now = System.currentTimeMillis();
+        ratingSessions.entrySet().removeIf(e -> now - e.getValue().getCreatedAt() > maxAgeMs);
+    }
+
     /**
      * Fetches stats asynchronously, then opens the stats GUI on the main thread.
      */

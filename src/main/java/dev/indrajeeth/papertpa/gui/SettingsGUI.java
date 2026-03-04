@@ -31,7 +31,6 @@ import java.util.concurrent.CompletableFuture;
  */
 public class SettingsGUI implements InventoryHolder {
 
-    /** Slot indices — kept as instance fields so clicks can resolve them. */
     public static final int DEFAULT_HEAD_SLOT          = 4;
     public static final int DEFAULT_TP_REQUESTS_SLOT   = 10;
     public static final int DEFAULT_AUTOTP_SLOT        = 13;
@@ -82,25 +81,18 @@ public class SettingsGUI implements InventoryHolder {
                         statsF.join(), reqF.join(), autoF.join(), notifF.join()));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Internal helpers
-    // ─────────────────────────────────────────────────────────────────────────
-
     private void buildContents(PaperTpa plugin, Player viewer, PlayerStats stats) {
         ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.settings");
         int size = inventory.getSize();
 
-        // Fill background
         ItemStack filler = cfg != null
                 ? ItemResolver.resolve(cfg.getConfigurationSection("filler-item"))
                 : new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         for (int i = 0; i < size; i++) inventory.setItem(i, filler);
 
-        // Player head
         int headSlot = cfg != null ? cfg.getInt("head-slot", DEFAULT_HEAD_SLOT) : DEFAULT_HEAD_SLOT;
         inventory.setItem(headSlot, buildHeadItem(plugin, cfg, viewer, stats));
 
-        // TP Requests toggle
         int reqSlot = cfg != null
                 ? cfg.getInt("tp-requests-slot", DEFAULT_TP_REQUESTS_SLOT) : DEFAULT_TP_REQUESTS_SLOT;
         inventory.setItem(reqSlot, buildToggleItem(plugin, cfg,
@@ -110,7 +102,6 @@ public class SettingsGUI implements InventoryHolder {
                 "gui.settings.tp-requests-lore-on",
                 "gui.settings.tp-requests-lore-off"));
 
-        // Auto-Accept toggle
         int autoSlot = cfg != null
                 ? cfg.getInt("autotp-slot", DEFAULT_AUTOTP_SLOT) : DEFAULT_AUTOTP_SLOT;
         inventory.setItem(autoSlot, buildToggleItem(plugin, cfg,
@@ -120,7 +111,6 @@ public class SettingsGUI implements InventoryHolder {
                 "gui.settings.autotp-lore-on",
                 "gui.settings.autotp-lore-off"));
 
-        // Rating Notifications toggle
         int notifSlot = cfg != null
                 ? cfg.getInt("notifications-slot", DEFAULT_NOTIFICATIONS_SLOT) : DEFAULT_NOTIFICATIONS_SLOT;
         inventory.setItem(notifSlot, buildToggleItem(plugin, cfg,
@@ -184,7 +174,6 @@ public class SettingsGUI implements InventoryHolder {
         if (itemCfg != null) {
             return ItemResolver.resolve(itemCfg);
         }
-        // Fallback: read display strings from messages.yml
         Material mat = enabled ? Material.LIME_STAINED_GLASS_PANE : Material.RED_STAINED_GLASS_PANE;
         ItemStack item = new ItemStack(mat);
         ItemMeta meta = item.getItemMeta();
@@ -198,10 +187,6 @@ public class SettingsGUI implements InventoryHolder {
         return item;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  State mutators (called by InventoryClickListener for optimistic toggle)
-    // ─────────────────────────────────────────────────────────────────────────
-
     public void setRequestsEnabled(boolean v)      { this.requestsEnabled      = v; }
     public void setAutoAccept(boolean v)            { this.autoAccept           = v; }
     public void setNotificationsEnabled(boolean v)  { this.notificationsEnabled = v; }
@@ -210,10 +195,6 @@ public class SettingsGUI implements InventoryHolder {
     public void refresh(PaperTpa plugin, Player viewer, PlayerStats stats) {
         buildContents(plugin, viewer, stats);
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Slot helpers used by InventoryClickListener
-    // ─────────────────────────────────────────────────────────────────────────
 
     public int getTpRequestsSlot(PaperTpa plugin) {
         ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.settings");
@@ -231,8 +212,6 @@ public class SettingsGUI implements InventoryHolder {
         return cfg != null ? cfg.getInt("notifications-slot", DEFAULT_NOTIFICATIONS_SLOT)
                            : DEFAULT_NOTIFICATIONS_SLOT;
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
 
     @Override public Inventory getInventory()       { return inventory; }
     public UUID     getViewerId()                   { return viewerId; }

@@ -101,7 +101,6 @@ public final class ItemResolver {
 
     private static ItemStack resolveItemsAdder(String namespaceId) {
         try {
-            // Use ItemsAdder API reflectively so the plugin compiles without it
             Class<?> customStackClass = Class.forName("dev.lone.itemsadder.api.CustomStack");
             Object customStack = customStackClass
                     .getMethod("getInstance", String.class)

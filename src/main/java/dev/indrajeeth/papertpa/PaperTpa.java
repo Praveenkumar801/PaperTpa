@@ -100,6 +100,7 @@ public class PaperTpa extends JavaPlugin {
         cleanupTask = Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
             try {
                 teleportManager.cleanupExpiredRequests();
+                guiManager.cleanupStaleSessions(600_000L);
             } catch (Exception e) {
                 getLogger().log(Level.WARNING, "Error during cleanup task", e);
             }

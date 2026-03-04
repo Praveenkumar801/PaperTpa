@@ -32,7 +32,6 @@ public class TeleportRequestManager {
     private final Map<UUID, Long> cooldowns = new ConcurrentHashMap<>();
     private final Map<UUID, UUID> requesterToTarget = new ConcurrentHashMap<>();
     private final Map<UUID, Long> immunePlayers = new ConcurrentHashMap<>();
-    /** Guards against scheduling duplicate rating prompts for the same player. */
     private final Set<UUID> pendingRatingScheduled = ConcurrentHashMap.newKeySet();
 
     /** Extra grace period to retain expired cooldown entries before purging. */
@@ -118,7 +117,7 @@ public class TeleportRequestManager {
             Player req = Bukkit.getPlayer(requesterId);
             Player acc = Bukkit.getPlayer(accepterId);
             if (req == null) {
-                requesterToTarget.remove(requesterId); // leak fix: requester went offline
+                requesterToTarget.remove(requesterId);
                 return;
             }
 
@@ -130,7 +129,7 @@ public class TeleportRequestManager {
             } else if (acc != null) {
                 dest = acc.getLocation();
             } else {
-                requesterToTarget.remove(requesterId); // leak fix: accepter went offline
+                requesterToTarget.remove(requesterId);
                 return;
             }
             teleportPlayer(req, dest);
@@ -192,20 +191,20 @@ public class TeleportRequestManager {
 
     void performTeleport(Player player, Location destination) {
         if (destination == null) {
-            requesterToTarget.remove(player.getUniqueId()); // leak fix
+            requesterToTarget.remove(player.getUniqueId());
             return;
         }
         if (destination.getWorld() == null
                 || Bukkit.getWorld(destination.getWorld().getUID()) == null) {
-            requesterToTarget.remove(player.getUniqueId()); // leak fix
+            requesterToTarget.remove(player.getUniqueId());
             return;
         }
         if (!player.isOnline()) {
-            requesterToTarget.remove(player.getUniqueId()); // leak fix
+            requesterToTarget.remove(player.getUniqueId());
             return;
         }
         if (!isSafeLocation(destination)) {
-            requesterToTarget.remove(player.getUniqueId()); // leak fix
+            requesterToTarget.remove(player.getUniqueId());
             MessageUtil.sendMessageWithPlaceholders(player,
                     plugin.getConfigManager().getPrefix()
                     + plugin.getConfigManager().getMessage("teleport.unsafe"));
@@ -221,7 +220,7 @@ public class TeleportRequestManager {
                     if (p != null) applyImmunity(p);
                 });
             } else {
-                requesterToTarget.remove(player.getUniqueId()); // leak fix: async teleport failed
+                requesterToTarget.remove(player.getUniqueId());
             }
         });
     }
@@ -251,7 +250,6 @@ public class TeleportRequestManager {
         Material headType   = head.getType();
         Material groundType = ground.getType();
 
-        // feet and head must be passable; ground must be solid; none can be a hazard
         return !feetType.isSolid()
                 && !headType.isSolid()
                 && groundType.isSolid()
@@ -399,7 +397,7 @@ public class TeleportRequestManager {
         activeRequests.entrySet().removeIf(e -> {
             if (now - e.getValue().getRequestTime() > timeoutMs) {
                 UUID requesterId = e.getKey();
-                requesterToTarget.remove(requesterId); // leak fix
+                requesterToTarget.remove(requesterId);
                 Player requester = Bukkit.getPlayer(requesterId);
                 if (requester != null) {
                     MessageUtil.sendMessageWithPlaceholders(requester,
@@ -407,7 +405,6 @@ public class TeleportRequestManager {
                             + plugin.getConfigManager().getMessage("requests.expired"));
                     SoundUtil.play(requester, "request-expired");
                 }
-                // Also notify the target that the request expired
                 UUID targetId = e.getValue().getTargetId();
                 Player target = Bukkit.getPlayer(targetId);
                 if (target != null) {
@@ -431,13 +428,13 @@ public class TeleportRequestManager {
     public void handlePlayerQuit(Player player) {
         UUID playerId = player.getUniqueId();
 
-        // Cancel any in-progress teleport warmup (no chat message needed; player is offline)
+        plugin.getGUIManager().removeRatingSession(playerId);
+
         PendingTeleport pt = pendingTeleports.remove(playerId);
         if (pt != null) {
             pt.cancelSilently();
         }
 
-        // Cancel a request this player sent, and tell the target
         TPARequest sent = activeRequests.remove(playerId);
         if (sent != null) {
             requesterToTarget.remove(playerId);
@@ -450,7 +447,6 @@ public class TeleportRequestManager {
             }
         }
 
-        // Cancel all requests targeting this player, and tell each requester
         List<UUID> senders = getPendingRequestsFor(playerId);
         for (UUID senderId : senders) {
             activeRequests.remove(senderId);
@@ -468,7 +464,7 @@ public class TeleportRequestManager {
     public void cancelTeleport(UUID playerId) {
         PendingTeleport pt = pendingTeleports.remove(playerId);
         if (pt != null) pt.cancel();
-        requesterToTarget.remove(playerId); // leak fix: warmup cancelled, no teleport = no rating
+        requesterToTarget.remove(playerId);
     }
 
     public void removePendingTeleport(UUID playerId) {

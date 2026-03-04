@@ -24,8 +24,6 @@ public class ImmunityListener implements Listener {
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
         if (!(event.getEntity() instanceof Player victim)) return;
-        // Immunity blocks all entity damage (players and mobs alike).
-        // Players with papertpa.immunity.bypass (default: op) can still hit immune players.
         if (event.getDamager() instanceof Player attacker
                 && attacker.hasPermission("papertpa.immunity.bypass")) return;
         if (plugin.getTeleportManager().isImmune(victim.getUniqueId())) {

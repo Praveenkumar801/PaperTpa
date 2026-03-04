@@ -51,21 +51,11 @@ public final class PermissionManager {
                     if (result != Tristate.UNDEFINED) {
                         return result == Tristate.TRUE;
                     }
-                    // UNDEFINED → no explicit LuckPerms entry → fall through to Bukkit
                 }
             } catch (Exception e) {
-                // LuckPerms lookup failed unexpectedly — fall through to Bukkit
+                // fall through to Bukkit
             }
         }
         return player.hasPermission(permission);
-    }
-
-    /** Convenience: sends the "no permission" message and returns {@code false}. */
-    public static boolean checkOrDeny(Player player, String permission) {
-        if (hasPermission(player, permission)) return true;
-        MessageUtil.sendMessageWithPlaceholders(player,
-                PaperTpa.getInstance().getConfigManager().getPrefix()
-                + PaperTpa.getInstance().getConfigManager().getMessage("general.no-permission"));
-        return false;
     }
 }
