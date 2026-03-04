@@ -31,7 +31,7 @@ commands:
     permission-message: "&cYou don't have permission. Required: papertpa.toggle"
   tpcancel:
     description: Cancel your pending request or warmup teleport
-    usage: /tpcancel
+    usage: /tpcancel [player]
     permission: papertpa.tpa
     permission-message: "&cYou don't have permission. Required: papertpa.tpa"
   tplist:

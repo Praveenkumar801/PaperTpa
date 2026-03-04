@@ -154,6 +154,15 @@ public class TeleportRequestManager {
         return activeRequests.remove(requesterId) != null;
     }
 
+    /** Cancels the request from {@code requesterId} only if it was directed at {@code targetId}. */
+    public boolean cancelRequest(UUID requesterId, UUID targetId) {
+        TPARequest request = activeRequests.get(requesterId);
+        if (request == null || !request.getTargetId().equals(targetId)) {
+            return false;
+        }
+        return activeRequests.remove(requesterId, request);
+    }
+
     public void teleportPlayer(Player player, Location destination) {
         UUID playerId = player.getUniqueId();
         if (pendingTeleports.containsKey(playerId)) return;

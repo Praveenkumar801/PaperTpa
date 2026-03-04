@@ -32,7 +32,7 @@ public final class BrigadierRegistrar {
         plugin.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             Commands cmds = event.registrar();
 
-            for (String name : List.of("tptoggle", "tpcancel", "tplist",
+            for (String name : List.of("tptoggle", "tplist",
                                        "tpnotify", "tpauto", "tprate")) {
                 String n = name;
                 cmds.register(
@@ -59,6 +59,31 @@ public final class BrigadierRegistrar {
                             return 1;
                         }))
                     .executes(ctx -> { delegate(ctx.getSource().getSender(), "tpa", new String[0]); return 1; })
+                    .build()
+            );
+
+            cmds.register(
+                Commands.literal("tpcancel")
+                    .then(Commands.argument("player", StringArgumentType.word())
+                        .suggests((ctx, builder) -> {
+                            if (ctx.getSource().getSender() instanceof Player player) {
+                                String prefix = builder.getRemaining().toLowerCase();
+                                plugin.getTeleportManager()
+                                    .getSentRequestsBy(player.getUniqueId()).stream()
+                                    .map(Bukkit::getPlayer)
+                                    .filter(java.util.Objects::nonNull)
+                                    .map(Player::getName)
+                                    .filter(nm -> nm.toLowerCase().startsWith(prefix))
+                                    .forEach(builder::suggest);
+                            }
+                            return builder.buildFuture();
+                        })
+                        .executes(ctx -> {
+                            delegate(ctx.getSource().getSender(), "tpcancel",
+                                new String[]{StringArgumentType.getString(ctx, "player")});
+                            return 1;
+                        }))
+                    .executes(ctx -> { delegate(ctx.getSource().getSender(), "tpcancel", new String[0]); return 1; })
                     .build()
             );
 
