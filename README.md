@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>PaperTpa</h1>
+  <h1>TpShield</h1>
   <p><strong>Simple, powerful teleport requests for Minecraft servers</strong></p>
   
   [![Minecraft](https://img.shields.io/badge/Minecraft-1.21.4+-brightgreen)](https://www.minecraft.net/)
@@ -22,36 +22,36 @@
 
 | Command                    | Description                                          | Permission               |
 |----------------------------|------------------------------------------------------|--------------------------|
-| `/tpa <player>`            | Send a teleport request                              | `papertpa.tpa`           |
-| `/tpaccept [player]`       | Accept a teleport request                            | `papertpa.tpaccept`      |
-| `/tpdeny [player]`         | Deny a teleport request                              | `papertpa.tpdeny`        |
-| `/tptoggle`                | Toggle teleport requests on/off                      | `papertpa.toggle`        |
-| `/tpcancel`                | Cancel your pending request or teleport warmup       | `papertpa.tpa`           |
-| `/tplist`                  | List all your pending teleport requests              | `papertpa.tpa`           |
-| `/tpaview <player>`        | Open the request GUI for a pending request           | `papertpa.tpa`           |
-| `/tpstats [player]`        | View TPA statistics GUI for yourself or another player | `papertpa.tpa`         |
-| `/tpsettings`              | Open the settings GUI (toggle requests, auto-accept, notifications) | `papertpa.tpa` |
-| `/tpnotify`                | Toggle post-teleport rating notifications on/off     | `papertpa.tpa`           |
-| `/tpauto`                  | Toggle auto-accept mode for incoming requests        | `papertpa.auto`          |
-| `/tprate`                  | Open the rating GUI after a teleport                 | `papertpa.tpa`           |
-| `/papertpa reload`         | Reload the plugin configuration                      | `papertpa.admin`         |
+| `/tpa <player>`            | Send a teleport request                              | `tpshield.tpa`           |
+| `/tpaccept [player]`       | Accept a teleport request                            | `tpshield.tpaccept`      |
+| `/tpdeny [player]`         | Deny a teleport request                              | `tpshield.tpdeny`        |
+| `/tptoggle`                | Toggle teleport requests on/off                      | `tpshield.toggle`        |
+| `/tpcancel`                | Cancel your pending request or teleport warmup       | `tpshield.tpa`           |
+| `/tplist`                  | List all your pending teleport requests              | `tpshield.tpa`           |
+| `/tpaview <player>`        | Open the request GUI for a pending request           | `tpshield.tpa`           |
+| `/tpstats [player]`        | View TPA statistics GUI for yourself or another player | `tpshield.tpa`         |
+| `/tpsettings`              | Open the settings GUI (toggle requests, auto-accept, notifications) | `tpshield.tpa` |
+| `/tpnotify`                | Toggle post-teleport rating notifications on/off     | `tpshield.tpa`           |
+| `/tpauto`                  | Toggle auto-accept mode for incoming requests        | `tpshield.auto`          |
+| `/tprate`                  | Open the rating GUI after a teleport                 | `tpshield.tpa`           |
+| `/tpshield reload`         | Reload the plugin configuration                      | `tpshield.admin`         |
 
 ## Permissions
 
 | Node                          | Description                                  | Default |
 |-------------------------------|----------------------------------------------|---------|
-| `papertpa.tpa`                | Send/cancel/list/view teleport requests      | true    |
-| `papertpa.tpaccept`           | Accept teleport requests                     | true    |
-| `papertpa.tpdeny`             | Deny teleport requests                       | true    |
-| `papertpa.toggle`             | Toggle teleport requests                     | true    |
-| `papertpa.auto`               | Toggle auto-accept mode                      | true    |
-| `papertpa.admin`              | Admin commands (reload)                      | op      |
-| `papertpa.bypass`             | Bypass disabled requests                     | op      |
-| `papertpa.cooldown.bypass`    | Bypass cooldown timers                       | op      |
-| `papertpa.delay.bypass`       | Bypass teleport warmup delay                 | op      |
-| `papertpa.stats.others`       | View another player's stats                  | op      |
-| `papertpa.immunity.bypass`    | Bypass post-teleport immunity (can hit immune players) | op |
-| `papertpa.*`                  | All PaperTpa permissions                     | op      |
+| `tpshield.tpa`                | Send/cancel/list/view teleport requests      | true    |
+| `tpshield.tpaccept`           | Accept teleport requests                     | true    |
+| `tpshield.tpdeny`             | Deny teleport requests                       | true    |
+| `tpshield.toggle`             | Toggle teleport requests                     | true    |
+| `tpshield.auto`               | Toggle auto-accept mode                      | true    |
+| `tpshield.admin`              | Admin commands (reload)                      | op      |
+| `tpshield.bypass`             | Bypass disabled requests                     | op      |
+| `tpshield.cooldown.bypass`    | Bypass cooldown timers                       | op      |
+| `tpshield.delay.bypass`       | Bypass teleport warmup delay                 | op      |
+| `tpshield.stats.others`       | View another player's stats                  | op      |
+| `tpshield.immunity.bypass`    | Bypass post-teleport immunity (can hit immune players) | op |
+| `tpshield.*`                  | All TpShield permissions                     | op      |
 
 ## Configuration
 
@@ -71,7 +71,7 @@ itemsadder: ""
 # 3. ItemsAdder namespace:id (requires ItemsAdder plugin)
 material: PAPER          # fallback if ItemsAdder not installed
 custom-model-data: 0
-itemsadder: "papertpa:accept_button"
+itemsadder: "tpshield:accept_button"
 ```
 
 Full example config snippet:
@@ -108,7 +108,7 @@ gui:
 
 ```bash
 ./gradlew shadowJar
-# Output jar: build/libs/PaperTpa-<version>.jar
+# Output jar: build/libs/TpShield-<version>.jar
 ```
 
 ## License
