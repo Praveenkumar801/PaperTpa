@@ -27,6 +27,7 @@ public class TeleportRequestManager {
     private final Map<UUID, PendingTeleport> pendingTeleports = new ConcurrentHashMap<>();
     private final Map<UUID, Long> cooldowns = new ConcurrentHashMap<>();
     private final Map<UUID, UUID> requesterToTarget = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> immunePlayers = new ConcurrentHashMap<>();
 
     public TeleportRequestManager(PaperTpa plugin, DatabaseManager database) {
         this.plugin   = plugin;
@@ -153,6 +154,13 @@ public class TeleportRequestManager {
         if (pendingTeleports.containsKey(playerId)) return;
 
         int delay = plugin.getConfigManager().getTeleportDelay();
+
+        // If teleport-delay is 0, check tp-idle setting
+        if (delay == 0 && plugin.getConfigManager().isTpIdleEnabled()
+                && !player.hasPermission("papertpa.delay.bypass")) {
+            delay = plugin.getConfigManager().getTpIdleTime();
+        }
+
         if (delay > 0 && !player.hasPermission("papertpa.delay.bypass")) {
             Location start = player.getLocation().clone();
             PendingTeleport pending = new PendingTeleport(player, destination, start, delay);
@@ -205,6 +213,10 @@ public class TeleportRequestManager {
             if (success) {
                 SoundUtil.play(player, "teleport-success");
                 scheduleRatingPrompt(player.getUniqueId());
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    Player p = Bukkit.getPlayer(player.getUniqueId());
+                    if (p != null && p.isOnline()) applyImmunity(p);
+                });
             } else {
                 requesterToTarget.remove(player.getUniqueId()); // leak fix: async teleport failed
             }

@@ -102,6 +102,18 @@ public class ConfigManager {
         return config.getBoolean("settings.capture-location-on-accept", true);
     }
 
+    public int getTpImmunity() {
+        return config.getInt("settings.tp-immunity", 0);
+    }
+
+    public boolean isTpIdleEnabled() {
+        return config.getBoolean("settings.tp-idle.enabled", false);
+    }
+
+    public int getTpIdleTime() {
+        return config.getInt("settings.tp-idle.time", 5);
+    }
+
     /**
      * Returns the ConfigurationSection for a GUI item path, e.g.
      * {@code "gui.request.accept-item"}.

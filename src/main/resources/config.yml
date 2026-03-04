@@ -23,6 +23,14 @@ settings:
   enable-sounds: true
   # Freeze destination location at the moment of acceptance
   capture-location-on-accept: true
+  # Seconds of post-teleport immunity from entity damage (0 = disabled)
+  tp-immunity: 30
+  # Require the teleporting player to stand idle before the TP fires
+  tp-idle:
+    # Set to true to enable the idle check (only applies when teleport-delay is 0)
+    enabled: false
+    # Seconds the player must stand still before the teleport executes
+    time: 5
 
 # ─────────────────────────────────────────────
 #  Notification sounds

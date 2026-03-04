@@ -35,6 +35,7 @@ requests:
   denied-target: "&cYou denied &e%player%&c's teleport request."
   cancelled: "&aYour teleport request has been cancelled."
   player-offline: "&cThe player who sent the request is no longer online!"
+  gui-not-active: "&cThis request is no longer active."
 
 # Teleport messages
 teleport:
@@ -62,9 +63,11 @@ toggle:
 # Interactive UI messages
 ui:
   button:
+    view: "&e[View Request]"
     accept: "&a[Accept]"
     deny: "&c[Deny]"
   hover:
+    view: "&eClick to view the teleport request details"
     accept: "&aClick to accept the teleport request"
     deny: "&cClick to deny the teleport request"
 
@@ -79,3 +82,15 @@ admin:
   config-reloading: "&eReloading EasyTPA configuration..."
   config-reloaded: "&aConfiguration has been reloaded successfully!"
   nothing-to-cancel: "&cYou have nothing to cancel."
+
+# Post-teleport immunity messages
+immunity:
+  applied: "&aYou have been granted &e%time%s &aof post-teleport immunity."
+  expired: "&7Your post-teleport immunity has expired."
+
+# Rating messages
+rating:
+  prompt: "&eHow was your teleport experience? "
+  click-to-rate-hover: "&eClick to open the rating GUI"
+  submitted: "&aYou rated &e%player% &a%stars% star(s). Thank you!"
+  expired: "&cYour rating session has expired."
