@@ -13,20 +13,18 @@ import java.util.Map;
 import java.util.logging.Level;
 
 /**
- * Resolves an {@link ItemStack} from a config section that supports:
- * <ul>
- *   <li>Vanilla {@code material} + optional {@code custom-model-data}</li>
- *   <li>ItemsAdder namespace:id via {@code itemsadder} key</li>
- * </ul>
+ * Resolves an {@link ItemStack} from a config section.
  *
- * Config section structure:
+ * <p>Config sections consumed by this class should only contain appearance
+ * fields — {@code material}, {@code custom-model-data}, and {@code itemsadder}.
+ * All display text (names, lore, titles) lives in {@code messages.yml} and is
+ * applied separately via {@link #applyText}.
+ *
+ * <p>Supported config section structure:
  * <pre>
  * material: PAPER
  * custom-model-data: 1001   # 0 = disabled
  * itemsadder: "namespace:item_id"   # empty = disabled
- * name: "&eItem Name"
- * lore:
- *   - "&7Line one"
  * </pre>
  */
 public final class ItemResolver {
@@ -35,6 +33,57 @@ public final class ItemResolver {
             Bukkit.getPluginManager().getPlugin("ItemsAdder") != null;
 
     private ItemResolver() {}
+
+    /**
+     * Resolves only the visual appearance (material, custom-model-data, ItemsAdder)
+     * from {@code section}, without applying any display name or lore.
+     * Use this together with {@link #applyText} when display text comes from
+     * {@code messages.yml} rather than {@code config.yml}.
+     *
+     * @param section  config section with appearance fields, or {@code null}
+     * @param fallback material to use when {@code section} is null or invalid
+     * @return the resolved ItemStack (name/lore blank)
+     */
+    public static ItemStack resolveAppearance(ConfigurationSection section, Material fallback) {
+        if (section == null) {
+            return new ItemStack(fallback);
+        }
+        ItemStack item = resolveBase(section);
+        return item != null ? item : new ItemStack(fallback);
+    }
+
+    /**
+     * Applies a display name and lore to an existing {@link ItemStack}, replacing
+     * {@code %key%} placeholders in each string with values from {@code placeholders}.
+     *
+     * @param item         the item to modify in-place
+     * @param name         display name string (may be null or empty to skip)
+     * @param lore         lore lines (may be null or empty to skip)
+     * @param placeholders placeholder map, or an empty map for no substitutions
+     */
+    public static void applyText(ItemStack item, String name, List<String> lore,
+                                  Map<String, String> placeholders) {
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) {
+            return;
+        }
+        if (name != null && !name.isEmpty()) {
+            meta.displayName(MessageUtil.toComponent(applyPlaceholders(name, placeholders)));
+        }
+        if (lore != null && !lore.isEmpty()) {
+            List<net.kyori.adventure.text.Component> loreComponents = new ArrayList<>();
+            for (String line : lore) {
+                loreComponents.add(MessageUtil.toComponent(applyPlaceholders(line, placeholders)));
+            }
+            meta.lore(loreComponents);
+        }
+        item.setItemMeta(meta);
+    }
+
+    /** Convenience overload of {@link #applyText} with no placeholder substitutions. */
+    public static void applyText(ItemStack item, String name, List<String> lore) {
+        applyText(item, name, lore, Map.of());
+    }
 
     /**
      * Build an ItemStack from a config section, applying name and lore after

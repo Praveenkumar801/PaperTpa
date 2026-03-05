@@ -14,11 +14,18 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
  * Displays lifetime TPA statistics for a target player.
+ *
+ * Layout (slots, size) is read from {@code config.yml → gui.player-info}.
+ * All display text is read from {@code messages.yml → gui.stats}.
+ *
  * Built asynchronously; call {@link #createAsync} and open the result on the main thread.
  */
 public class StatsGUI implements InventoryHolder {
@@ -30,28 +37,30 @@ public class StatsGUI implements InventoryHolder {
         this.targetId = targetId;
 
         ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.player-info");
-        String rawTitle = cfg != null
-                ? cfg.getString("title", plugin.getConfigManager().getMessage("gui.titles.stats"))
-                : plugin.getConfigManager().getMessage("gui.titles.stats");
-        String title = rawTitle.replace("%player%", targetName);
+
+        // Title always comes from messages.yml
+        String title = plugin.getConfigManager()
+                .getMessage("gui.titles.stats", Map.of("player", targetName));
         int size = cfg != null ? cfg.getInt("size", 27) : 27;
 
         this.inventory = Bukkit.createInventory(this, size,
                 net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
                         .legacyAmpersand().deserialize(title));
 
-        ItemStack filler = cfg != null
-                ? ItemResolver.resolve(cfg.getConfigurationSection("filler-item"))
-                : new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        // Fill background
+        ItemStack filler = ItemResolver.resolveAppearance(
+                cfg != null ? cfg.getConfigurationSection("filler-item") : null,
+                Material.GRAY_STAINED_GLASS_PANE);
         for (int i = 0; i < size; i++) inventory.setItem(i, filler);
 
+        // Stats head
         int statsSlot = cfg != null ? cfg.getInt("stats-slot", 13) : 13;
-        inventory.setItem(statsSlot, buildStatsHead(plugin, cfg, targetId, targetName, stats));
+        inventory.setItem(statsSlot, buildStatsHead(plugin, targetId, targetName, stats));
     }
 
     /**
-     * Asynchronously fetches stats from the DB, then returns a ready-to-open StatsGUI
-     * on the calling (async) thread. Caller must open the inventory on the main thread.
+     * Asynchronously fetches stats from the DB, then returns a ready-to-open StatsGUI.
+     * Caller must open the inventory on the main thread.
      */
     public static CompletableFuture<StatsGUI> createAsync(TpShield plugin, UUID targetId) {
         return plugin.getDatabaseManager().getPlayerStats(targetId).thenApply(stats -> {
@@ -61,7 +70,7 @@ public class StatsGUI implements InventoryHolder {
         });
     }
 
-    private static ItemStack buildStatsHead(TpShield plugin, ConfigurationSection cfg,
+    private static ItemStack buildStatsHead(TpShield plugin,
                                              UUID targetId, String name, PlayerStats stats) {
         ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta meta  = (SkullMeta) skull.getItemMeta();
@@ -70,53 +79,38 @@ public class StatsGUI implements InventoryHolder {
         OfflinePlayer op = Bukkit.getOfflinePlayer(targetId);
         meta.setOwningPlayer(op);
 
-        ConfigurationSection itemCfg = cfg != null ? cfg.getConfigurationSection("stats-item") : null;
-        String displayName = itemCfg != null
-                ? itemCfg.getString("name", plugin.getConfigManager().getMessage("gui.stats.head-name"))
-                : plugin.getConfigManager().getMessage("gui.stats.head-name");
-        meta.displayName(MessageUtil.toComponent(displayName.replace("%player%", name)));
+        String ratingStr = stats.totalRatings > 0 ? String.format("%.1f", stats.averageRating) : "0";
+        String trapStr   = String.format("%.1f", stats.trapPercent);
+        String tierStr   = getReputationTier(plugin, stats);
 
-        java.util.List<net.kyori.adventure.text.Component> lore = new java.util.ArrayList<>();
-        if (itemCfg != null) {
-            String ratingStr = stats.totalRatings > 0
-                    ? String.format("%.1f", stats.averageRating) : "0";
-            String trapStr   = String.format("%.1f", stats.trapPercent);
-            String tierStr   = getReputationTier(plugin, stats);
-            for (String line : itemCfg.getStringList("lore")) {
-                line = line
-                    .replace("%player%",               name)
-                    .replace("%tpa_sent%",              String.valueOf(stats.totalSent))
-                    .replace("%tpa_received%",          String.valueOf(stats.totalReceived))
-                    .replace("%tpa_accepted%",          String.valueOf(stats.totalAccepted))
-                    .replace("%tpa_denied%",            String.valueOf(stats.totalDenied))
-                    .replace("%tpa_rating%",            ratingStr)
-                    .replace("%tpa_trap_percent%",      trapStr)
-                    .replace("%tpa_reputation_tier%",   tierStr)
-                    .replace("%tpa_total_ratings%",     String.valueOf(stats.totalRatings));
-                lore.add(MessageUtil.toComponent(line));
-            }
-        }
-        if (lore.isEmpty()) {
-            String sent     = plugin.getConfigManager().getMessage("gui.stats.sent",
-                    java.util.Map.of("tpa_sent", String.valueOf(stats.totalSent)));
-            String received = plugin.getConfigManager().getMessage("gui.stats.received",
-                    java.util.Map.of("tpa_received", String.valueOf(stats.totalReceived)));
-            String accepted = plugin.getConfigManager().getMessage("gui.stats.accepted",
-                    java.util.Map.of("tpa_accepted", String.valueOf(stats.totalAccepted)));
-            String denied   = plugin.getConfigManager().getMessage("gui.stats.denied",
-                    java.util.Map.of("tpa_denied", String.valueOf(stats.totalDenied)));
-            lore.add(MessageUtil.toComponent(sent));
-            lore.add(MessageUtil.toComponent(received));
-            lore.add(MessageUtil.toComponent(accepted));
-            lore.add(MessageUtil.toComponent(denied));
-        }
+        meta.displayName(MessageUtil.toComponent(
+                plugin.getConfigManager().getMessage("gui.stats.head-name",
+                        Map.of("player", name))));
+
+        List<net.kyori.adventure.text.Component> lore = new ArrayList<>();
+        lore.add(MessageUtil.toComponent(plugin.getConfigManager().getMessage(
+                "gui.stats.sent", Map.of("tpa_sent", String.valueOf(stats.totalSent)))));
+        lore.add(MessageUtil.toComponent(plugin.getConfigManager().getMessage(
+                "gui.stats.received", Map.of("tpa_received", String.valueOf(stats.totalReceived)))));
+        lore.add(MessageUtil.toComponent(plugin.getConfigManager().getMessage(
+                "gui.stats.accepted", Map.of("tpa_accepted", String.valueOf(stats.totalAccepted)))));
+        lore.add(MessageUtil.toComponent(plugin.getConfigManager().getMessage(
+                "gui.stats.denied", Map.of("tpa_denied", String.valueOf(stats.totalDenied)))));
+        lore.add(MessageUtil.toComponent(plugin.getConfigManager().getMessage(
+                "gui.stats.trap-percent", Map.of("tpa_trap_percent", trapStr))));
+        lore.add(MessageUtil.toComponent(plugin.getConfigManager().getMessage(
+                "gui.stats.rating", Map.of("tpa_rating", ratingStr))));
+        lore.add(MessageUtil.toComponent(plugin.getConfigManager().getMessage(
+                "gui.stats.total-ratings", Map.of("tpa_total_ratings", String.valueOf(stats.totalRatings)))));
+        lore.add(MessageUtil.toComponent(plugin.getConfigManager().getMessage(
+                "gui.stats.reputation", Map.of("tpa_reputation_tier", tierStr))));
+
         meta.lore(lore);
         skull.setItemMeta(meta);
         return skull;
     }
 
-    private static String getReputationTier(TpShield plugin,
-                                             dev.indrajeeth.tpshield.model.PlayerStats stats) {
+    private static String getReputationTier(TpShield plugin, PlayerStats stats) {
         if (stats.totalRatings == 0)
             return plugin.getConfigManager().getMessage("gui.reputation.unrated");
         if (stats.trapPercent >= 30.0 || stats.averageRating < 2.0)
