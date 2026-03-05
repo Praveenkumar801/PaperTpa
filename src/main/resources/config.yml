@@ -1,0 +1,232 @@
+# ══════════════════════════════════════════════════════════════
+#  TpShield — Configuration
+#  Plugin:  TpShield
+#  Author:  IndrajeethY
+#  Source:  https://github.com/Praveenkumar801/TpShield
+# ══════════════════════════════════════════════════════════════
+#
+#  This file controls BEHAVIOUR and LAYOUT only.
+#  ┌─ Edit timings, cooldowns, sound effects, and GUI slot/material
+#  │  settings here.
+#  └─ Edit all player-visible text (messages, item names, lore,
+#     GUI titles) in messages.yml instead.
+#
+# ══════════════════════════════════════════════════════════════
+
+# ─────────────────────────────────────────────
+#  Core settings
+# ─────────────────────────────────────────────
+settings:
+  # Seconds before an unanswered TPA request expires.
+  request-timeout: 60
+  # Seconds a player must wait between sending requests.
+  cooldown: 10
+  # Warmup seconds before the teleport fires (0 = instant).
+  teleport-delay: 5
+  # Seconds after landing before the post-teleport rating GUI appears.
+  rating-delay: 30
+  # Whether to play sounds on teleport events.
+  enable-sounds: true
+  # Freeze destination location at the moment the request is accepted.
+  capture-location-on-accept: true
+  # Seconds of post-teleport immunity from entity damage (0 = disabled).
+  tp-immunity: 30
+  # Require the teleporting player to stand still before the TP fires.
+  tp-idle:
+    # Set true to enable the idle check (only applies when teleport-delay > 0).
+    enabled: false
+    # Seconds the player must remain still before the teleport executes.
+    time: 5
+
+# ─────────────────────────────────────────────
+#  Notification sounds
+#
+#  sound:  Minecraft sound registry key (e.g. entity.experience_orb.pickup)
+#          Full list: https://minecraft.wiki/w/Sounds.json
+#  volume: 0.0 – 2.0
+#  pitch:  0.5 – 2.0
+# ─────────────────────────────────────────────
+sounds:
+  # Played to the sender when a TPA request is sent.
+  request-sent:
+    enabled: true
+    sound: ui.button.click
+    volume: 1.0
+    pitch: 1.0
+
+  # Played to the target when they receive a TPA request.
+  request-received:
+    enabled: true
+    sound: block.note_block.pling
+    volume: 1.0
+    pitch: 1.2
+
+  # Played to both players when a request is accepted.
+  request-accepted:
+    enabled: true
+    sound: entity.experience_orb.pickup
+    volume: 1.0
+    pitch: 1.0
+
+  # Played to both players when a request is denied.
+  request-denied:
+    enabled: true
+    sound: entity.villager.no
+    volume: 1.0
+    pitch: 1.0
+
+  # Played to the sender when their request expires.
+  request-expired:
+    enabled: true
+    sound: block.note_block.bass
+    volume: 1.0
+    pitch: 0.8
+
+  # Played to the teleporting player at the start of the warmup countdown.
+  teleport-start:
+    enabled: true
+    sound: block.note_block.chime
+    volume: 1.0
+    pitch: 1.0
+
+  # Played each second during the warmup countdown.
+  teleport-countdown:
+    enabled: true
+    sound: block.note_block.hat
+    volume: 0.8
+    pitch: 1.0
+
+  # Played to the player upon a successful teleport.
+  teleport-success:
+    enabled: true
+    sound: entity.enderman.teleport
+    volume: 1.0
+    pitch: 1.0
+
+  # Played when the teleport is cancelled (moved / damaged / logged out).
+  teleport-cancelled:
+    enabled: true
+    sound: entity.villager.hurt
+    volume: 1.0
+    pitch: 1.0
+
+  # Played when the player opens the post-teleport rating GUI.
+  rating-prompt:
+    enabled: true
+    sound: block.note_block.pling
+    volume: 1.0
+    pitch: 1.5
+
+# ─────────────────────────────────────────────
+#  GUI layout
+#
+#  Each sub-section controls one inventory:
+#    size           – inventory rows × 9 (must be a multiple of 9)
+#    *-slot         – zero-based slot index for each button
+#    *-item fields  – appearance only: material, custom-model-data, itemsadder
+#
+#  Item appearance keys:
+#    material         – Bukkit Material enum name (used when itemsadder is empty)
+#    custom-model-data – resource-pack model override (0 = disabled)
+#    itemsadder       – ItemsAdder namespace:id  (empty = disabled)
+#
+#  All display text (titles, item names, lore) is in messages.yml → gui.*
+# ─────────────────────────────────────────────
+gui:
+
+  # ── TPA Request GUI (shown to the TPA target) ──────────────────
+  request:
+    size: 27
+    requester-slot: 4   # Player head of the requester
+    accept-slot: 11     # Accept button
+    deny-slot: 15       # Deny button
+    requester-item:
+      material: PLAYER_HEAD
+      custom-model-data: 0
+      itemsadder: ""
+    accept-item:
+      material: LIME_STAINED_GLASS_PANE
+      custom-model-data: 0
+      # Example: itemsadder: "tpshield:accept_button"
+      itemsadder: ""
+    deny-item:
+      material: RED_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+    filler-item:
+      material: GRAY_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+
+  # ── Player Info / Stats GUI (/tpstats) ─────────────────────────
+  player-info:
+    size: 27
+    stats-slot: 13      # Player head with lifetime stats in lore
+    filler-item:
+      material: GRAY_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+
+  # ── Post-teleport Rating GUI ────────────────────────────────────
+  rating:
+    size: 27
+    star-slots: [10, 11, 12, 13, 14]  # Slots for stars 1–5
+    trap-report-slot: 16               # Trap-report toggle button
+    confirm-slot: 22                   # Confirm/submit button
+    star-item:
+      material: GOLDEN_SWORD
+      custom-model-data: 0
+      itemsadder: ""
+    trap-report-item:
+      material: RED_CONCRETE
+      custom-model-data: 0
+      itemsadder: ""
+    confirm-item:
+      material: EMERALD
+      custom-model-data: 0
+      itemsadder: ""
+    filler-item:
+      material: GRAY_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+
+  # ── Player Settings GUI (/tpsettings) ───────────────────────────
+  settings:
+    size: 27
+    head-slot: 4             # Player's own head with stats
+    tp-requests-slot: 10     # TP-requests toggle button
+    autotp-slot: 13          # Auto-accept toggle button
+    notifications-slot: 16   # Rating-notifications toggle button
+    head-item:
+      material: PLAYER_HEAD
+      custom-model-data: 0
+      itemsadder: ""
+    tp-requests-enabled-item:
+      material: LIME_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+    tp-requests-disabled-item:
+      material: RED_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+    autotp-enabled-item:
+      material: LIME_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+    autotp-disabled-item:
+      material: RED_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+    notifications-enabled-item:
+      material: LIME_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+    notifications-disabled-item:
+      material: RED_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+    filler-item:
+      material: GRAY_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+

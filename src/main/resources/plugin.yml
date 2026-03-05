@@ -1,0 +1,126 @@
+name: TpShield
+version: v2.0.0-Alpha+1
+main: dev.indrajeeth.tpshield.TpShield
+api-version: 1.21
+description: Simple, powerful teleport requests for Minecraft servers
+authors: ["IndrajeethY"]
+website: https://github.com/Praveenkumar801/TpShield
+depend: []
+softdepend: [PlaceholderAPI, ItemsAdder, LuckPerms]
+
+commands:
+  tpa:
+    description: Send a teleport request to a player
+    usage: /tpa <player>
+    permission: tpshield.tpa
+    permission-message: "&cYou don't have permission. Required: tpshield.tpa"
+  tpaccept:
+    description: Accept a teleport request
+    usage: /tpaccept [player]
+    permission: tpshield.tpaccept
+    permission-message: "&cYou don't have permission. Required: tpshield.tpaccept"
+  tpdeny:
+    description: Deny a teleport request
+    usage: /tpdeny [player]
+    permission: tpshield.tpdeny
+    permission-message: "&cYou don't have permission. Required: tpshield.tpdeny"
+  tptoggle:
+    description: Toggle receiving teleport requests on/off
+    usage: /tptoggle
+    permission: tpshield.toggle
+    permission-message: "&cYou don't have permission. Required: tpshield.toggle"
+  tpcancel:
+    description: Cancel your pending request or warmup teleport
+    usage: /tpcancel [player]
+    permission: tpshield.tpa
+    permission-message: "&cYou don't have permission. Required: tpshield.tpa"
+  tplist:
+    description: List all your pending teleport requests
+    usage: /tplist
+    permission: tpshield.tpa
+    permission-message: "&cYou don't have permission. Required: tpshield.tpa"
+  tpaview:
+    description: Open the GUI for an incoming TPA request
+    usage: /tpaview <player>
+    permission: tpshield.tpa
+    permission-message: "&cYou don't have permission. Required: tpshield.tpa"
+  tpnotify:
+    description: Toggle the post-teleport rating notification
+    usage: /tpnotify
+    permission: tpshield.tpa
+    permission-message: "&cYou don't have permission. Required: tpshield.tpa"
+  tpauto:
+    description: Toggle auto-accept for all incoming teleport requests
+    usage: /tpauto
+    permission: tpshield.auto
+    permission-message: "&cYou don't have permission. Required: tpshield.auto"
+  tprate:
+    description: Open the rating GUI for your last teleport
+    usage: /tprate
+    permission: tpshield.tpa
+    permission-message: "&cYou don't have permission. Required: tpshield.tpa"
+  tpstats:
+    description: View your own TPA statistics
+    usage: /tpstats [player]
+    permission: tpshield.tpa
+    permission-message: "&cYou don't have permission. Required: tpshield.tpa"
+  tpsettings:
+    description: Open your TPA settings GUI
+    usage: /tpsettings
+    permission: tpshield.tpa
+    permission-message: "&cYou don't have permission. Required: tpshield.tpa"
+  tpshield:
+    description: TpShield admin commands
+    usage: /tpshield reload
+    permission: tpshield.admin
+    permission-message: "&cYou don't have permission. Required: tpshield.admin"
+
+permissions:
+  tpshield.tpa:
+    description: Send/cancel/list/view/notify/rate teleport requests
+    default: true
+  tpshield.tpaccept:
+    description: Accept incoming teleport requests
+    default: true
+  tpshield.tpdeny:
+    description: Deny incoming teleport requests
+    default: true
+  tpshield.toggle:
+    description: Toggle receiving teleport requests on or off
+    default: true
+  tpshield.auto:
+    description: Toggle auto-accept for all incoming teleport requests
+    default: true
+  tpshield.admin:
+    description: Reload the plugin configuration
+    default: op
+  tpshield.bypass:
+    description: Bypass targets that have teleport requests disabled
+    default: op
+  tpshield.cooldown.bypass:
+    description: Skip the send-cooldown between requests
+    default: op
+  tpshield.delay.bypass:
+    description: Skip the warmup countdown before teleporting
+    default: op
+  tpshield.stats.others:
+    description: View other players' TPA statistics via /tpstats <player>
+    default: op
+  tpshield.immunity.bypass:
+    description: This player's attacks can still hit post-teleport immune players
+    default: op
+  tpshield.*:
+    description: All TpShield permissions
+    default: op
+    children:
+      tpshield.tpa: true
+      tpshield.tpaccept: true
+      tpshield.tpdeny: true
+      tpshield.toggle: true
+      tpshield.auto: true
+      tpshield.admin: true
+      tpshield.bypass: true
+      tpshield.cooldown.bypass: true
+      tpshield.delay.bypass: true
+      tpshield.stats.others: true
+      tpshield.immunity.bypass: true
