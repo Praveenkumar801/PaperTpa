@@ -20,12 +20,12 @@ public class PlaceholderAPIIntegration extends PlaceholderExpansion {
 
     @Override
     public String getAuthor() {
-        return String.join(", ", plugin.getDescription().getAuthors());
+        return String.join(", ", plugin.getPluginMeta().getAuthors());
     }
 
     @Override
     public String getVersion() {
-        return plugin.getDescription().getVersion();
+        return plugin.getPluginMeta().getVersion();
     }
 
     @Override

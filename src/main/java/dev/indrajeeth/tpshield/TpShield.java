@@ -76,7 +76,7 @@ public class TpShield extends JavaPlugin {
 
         startCleanupTask();
 
-        getLogger().info("TpShield v" + getDescription().getVersion() + " has been enabled!");
+        getLogger().info("TpShield v" + getPluginMeta().getVersion() + " has been enabled!");
     }
 
     @Override

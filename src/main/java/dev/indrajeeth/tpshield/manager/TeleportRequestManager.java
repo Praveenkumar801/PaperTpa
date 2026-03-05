@@ -308,7 +308,8 @@ public class TeleportRequestManager {
                     String rateButtonText = plugin.getConfigManager().getMessage("rating.rate-button");
                     Component prompt = MessageUtil.toComponent(
                             plugin.getConfigManager().getPrefix()
-                            + plugin.getConfigManager().getMessage("rating.prompt"));
+                            + plugin.getConfigManager().getMessage("rating.prompt",
+                                    Map.of("player", targetName)));
                     Component clickable = Component.text()
                             .append(prompt)
                             .append(Component.text(" "))

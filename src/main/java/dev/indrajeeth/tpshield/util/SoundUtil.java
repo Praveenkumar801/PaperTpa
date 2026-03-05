@@ -1,10 +1,13 @@
 package dev.indrajeeth.tpshield.util;
 
 import dev.indrajeeth.tpshield.TpShield;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
+import java.util.Locale;
 import java.util.logging.Level;
 
 /**
@@ -15,7 +18,7 @@ import java.util.logging.Level;
  * sounds:
  *   request-sent:
  *     enabled: true
- *     sound: ENTITY_EXPERIENCE_ORB_PICKUP
+ *     sound: entity.experience_orb.pickup
  *     volume: 1.0
  *     pitch: 1.0
  * </pre>
@@ -42,7 +45,7 @@ public final class SoundUtil {
         if (section == null) return;
         if (!section.getBoolean("enabled", true)) return;
 
-        String soundName = section.getString("sound", "").toUpperCase().trim();
+        String soundName = section.getString("sound", "").trim();
         if (soundName.isEmpty()) return;
 
         float volume = (float) section.getDouble("volume", 1.0);
@@ -55,13 +58,18 @@ public final class SoundUtil {
     }
 
     private static Sound parseSound(String name, String eventKey, TpShield plugin) {
-        try {
-            return Sound.valueOf(name);
-        } catch (IllegalArgumentException e) {
-            plugin.getLogger().log(Level.WARNING,
-                    "[SoundUtil] Unknown sound '" + name + "' for event '" + eventKey
-                            + "'. Check config.yml sounds section.");
-            return null;
+        // Try registry-based lookup using the Minecraft sound key format
+        // (e.g. "entity.experience_orb.pickup" or "minecraft:entity.experience_orb.pickup")
+        NamespacedKey key = NamespacedKey.fromString(name.toLowerCase(Locale.ROOT));
+        if (key != null) {
+            Sound sound = Registry.SOUNDS.get(key);
+            if (sound != null) return sound;
         }
+
+        plugin.getLogger().log(Level.WARNING,
+                "[SoundUtil] Unknown sound '" + name + "' for event '" + eventKey
+                        + "'. Check config.yml sounds section."
+                        + " Use registry format like 'entity.experience_orb.pickup'.");
+        return null;
     }
 }
