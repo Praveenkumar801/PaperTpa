@@ -11,11 +11,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -26,8 +26,8 @@ import java.util.concurrent.CompletableFuture;
  *   - Auto-Accept TP (tpauto)
  *   - Rating Notifications (tpnotify)
  *
- * All slots, materials, names, and lore are configurable under
- * {@code gui.settings} in config.yml.
+ * Layout (slot positions, materials) is read from {@code config.yml → gui.settings}.
+ * All display text is read from {@code messages.yml → gui.settings}.
  */
 public class SettingsGUI implements InventoryHolder {
 
@@ -54,9 +54,9 @@ public class SettingsGUI implements InventoryHolder {
         this.notificationsEnabled = notificationsEnabled;
 
         ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.settings");
-        String rawTitle = cfg != null
-                ? cfg.getString("title", plugin.getConfigManager().getMessage("gui.titles.settings"))
-                : plugin.getConfigManager().getMessage("gui.titles.settings");
+
+        // Title always comes from messages.yml
+        String rawTitle = plugin.getConfigManager().getMessage("gui.titles.settings");
         int size = cfg != null ? cfg.getInt("size", 27) : 27;
 
         this.inventory = Bukkit.createInventory(this, size,
@@ -85,40 +85,42 @@ public class SettingsGUI implements InventoryHolder {
         ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.settings");
         int size = inventory.getSize();
 
-        ItemStack filler = cfg != null
-                ? ItemResolver.resolve(cfg.getConfigurationSection("filler-item"))
-                : new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        // Fill background
+        ItemStack filler = ItemResolver.resolveAppearance(
+                cfg != null ? cfg.getConfigurationSection("filler-item") : null,
+                Material.GRAY_STAINED_GLASS_PANE);
         for (int i = 0; i < size; i++) inventory.setItem(i, filler);
 
+        // Player head with stats
         int headSlot = cfg != null ? cfg.getInt("head-slot", DEFAULT_HEAD_SLOT) : DEFAULT_HEAD_SLOT;
         inventory.setItem(headSlot, buildHeadItem(plugin, cfg, viewer, stats));
 
+        // TP requests toggle
         int reqSlot = cfg != null
                 ? cfg.getInt("tp-requests-slot", DEFAULT_TP_REQUESTS_SLOT) : DEFAULT_TP_REQUESTS_SLOT;
-        inventory.setItem(reqSlot, buildToggleItem(plugin, cfg,
-                requestsEnabled, "tp-requests-enabled-item", "tp-requests-disabled-item",
-                "gui.settings.tp-requests-on",
-                "gui.settings.tp-requests-off",
-                "gui.settings.tp-requests-lore-on",
-                "gui.settings.tp-requests-lore-off"));
+        inventory.setItem(reqSlot, buildToggleItem(plugin, cfg, requestsEnabled,
+                "tp-requests-enabled-item", "tp-requests-disabled-item",
+                Material.LIME_STAINED_GLASS_PANE, Material.RED_STAINED_GLASS_PANE,
+                "gui.settings.tp-requests-on",   "gui.settings.tp-requests-off",
+                "gui.settings.tp-requests-lore-on", "gui.settings.tp-requests-lore-off"));
 
+        // Auto-accept toggle
         int autoSlot = cfg != null
                 ? cfg.getInt("autotp-slot", DEFAULT_AUTOTP_SLOT) : DEFAULT_AUTOTP_SLOT;
-        inventory.setItem(autoSlot, buildToggleItem(plugin, cfg,
-                autoAccept, "autotp-enabled-item", "autotp-disabled-item",
-                "gui.settings.autotp-on",
-                "gui.settings.autotp-off",
-                "gui.settings.autotp-lore-on",
-                "gui.settings.autotp-lore-off"));
+        inventory.setItem(autoSlot, buildToggleItem(plugin, cfg, autoAccept,
+                "autotp-enabled-item", "autotp-disabled-item",
+                Material.LIME_STAINED_GLASS_PANE, Material.RED_STAINED_GLASS_PANE,
+                "gui.settings.autotp-on",   "gui.settings.autotp-off",
+                "gui.settings.autotp-lore-on", "gui.settings.autotp-lore-off"));
 
+        // Rating notifications toggle
         int notifSlot = cfg != null
                 ? cfg.getInt("notifications-slot", DEFAULT_NOTIFICATIONS_SLOT) : DEFAULT_NOTIFICATIONS_SLOT;
-        inventory.setItem(notifSlot, buildToggleItem(plugin, cfg,
-                notificationsEnabled, "notifications-enabled-item", "notifications-disabled-item",
-                "gui.settings.notifications-on",
-                "gui.settings.notifications-off",
-                "gui.settings.notifications-lore-on",
-                "gui.settings.notifications-lore-off"));
+        inventory.setItem(notifSlot, buildToggleItem(plugin, cfg, notificationsEnabled,
+                "notifications-enabled-item", "notifications-disabled-item",
+                Material.LIME_STAINED_GLASS_PANE, Material.RED_STAINED_GLASS_PANE,
+                "gui.settings.notifications-on",   "gui.settings.notifications-off",
+                "gui.settings.notifications-lore-on", "gui.settings.notifications-lore-off"));
     }
 
     private static ItemStack buildHeadItem(TpShield plugin, ConfigurationSection cfg,
@@ -128,62 +130,49 @@ public class SettingsGUI implements InventoryHolder {
         if (meta == null) return skull;
         meta.setOwningPlayer(viewer);
 
-        ConfigurationSection itemCfg = cfg != null ? cfg.getConfigurationSection("head-item") : null;
         String ratingStr = stats.totalRatings > 0 ? String.format("%.1f", stats.averageRating) : "0";
+        String playerName = viewer.getName();
 
-        String displayName = itemCfg != null
-                ? itemCfg.getString("name", plugin.getConfigManager().getMessage("gui.settings.head-name"))
-                : plugin.getConfigManager().getMessage("gui.settings.head-name");
-        meta.displayName(MessageUtil.toComponent(displayName.replace("%player%", viewer.getName())));
+        meta.displayName(MessageUtil.toComponent(
+                plugin.getConfigManager().getMessage("gui.settings.head-name",
+                        Map.of("player", playerName))));
 
         List<net.kyori.adventure.text.Component> lore = new ArrayList<>();
-        if (itemCfg != null) {
-            for (String line : itemCfg.getStringList("lore")) {
-                line = line.replace("%player%",       viewer.getName())
-                           .replace("%tpa_sent%",     String.valueOf(stats.totalSent))
-                           .replace("%tpa_received%", String.valueOf(stats.totalReceived))
-                           .replace("%tpa_accepted%", String.valueOf(stats.totalAccepted))
-                           .replace("%tpa_denied%",   String.valueOf(stats.totalDenied))
-                           .replace("%tpa_rating%",   ratingStr);
-                lore.add(MessageUtil.toComponent(line));
-            }
-        }
-        if (lore.isEmpty()) {
-            lore.add(MessageUtil.toComponent(
-                    plugin.getConfigManager().getMessage("gui.settings.head-sent",
-                            java.util.Map.of("tpa_sent", String.valueOf(stats.totalSent)))));
-            lore.add(MessageUtil.toComponent(
-                    plugin.getConfigManager().getMessage("gui.settings.head-received",
-                            java.util.Map.of("tpa_received", String.valueOf(stats.totalReceived)))));
-            lore.add(MessageUtil.toComponent(
-                    plugin.getConfigManager().getMessage("gui.settings.head-rating",
-                            java.util.Map.of("tpa_rating", ratingStr))));
-        }
+        lore.add(MessageUtil.toComponent(plugin.getConfigManager().getMessage(
+                "gui.settings.head-sent", Map.of("tpa_sent", String.valueOf(stats.totalSent)))));
+        lore.add(MessageUtil.toComponent(plugin.getConfigManager().getMessage(
+                "gui.settings.head-received", Map.of("tpa_received", String.valueOf(stats.totalReceived)))));
+        lore.add(MessageUtil.toComponent(plugin.getConfigManager().getMessage(
+                "gui.settings.head-accepted", Map.of("tpa_accepted", String.valueOf(stats.totalAccepted)))));
+        lore.add(MessageUtil.toComponent(plugin.getConfigManager().getMessage(
+                "gui.settings.head-denied", Map.of("tpa_denied", String.valueOf(stats.totalDenied)))));
+        lore.add(MessageUtil.toComponent(plugin.getConfigManager().getMessage(
+                "gui.settings.head-rating", Map.of("tpa_rating", ratingStr))));
         meta.lore(lore);
+
         skull.setItemMeta(meta);
         return skull;
     }
 
+    /**
+     * Builds a toggle button whose material and text come from messages.yml.
+     * Material is resolved from config.yml when available, otherwise a plain fallback is used.
+     */
     private static ItemStack buildToggleItem(TpShield plugin, ConfigurationSection cfg,
                                               boolean enabled,
-                                              String enabledKey, String disabledKey,
-                                              String nameOnMsgKey, String nameOffMsgKey,
-                                              String loreOnMsgKey, String loreOffMsgKey) {
-        String cfgKey = enabled ? enabledKey : disabledKey;
-        ConfigurationSection itemCfg = cfg != null ? cfg.getConfigurationSection(cfgKey) : null;
-        if (itemCfg != null) {
-            return ItemResolver.resolve(itemCfg);
-        }
-        Material mat = enabled ? Material.LIME_STAINED_GLASS_PANE : Material.RED_STAINED_GLASS_PANE;
-        ItemStack item = new ItemStack(mat);
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            String nameMsg = plugin.getConfigManager().getMessage(enabled ? nameOnMsgKey : nameOffMsgKey);
-            String loreMsg = plugin.getConfigManager().getMessage(enabled ? loreOnMsgKey : loreOffMsgKey);
-            meta.displayName(MessageUtil.toComponent(nameMsg));
-            meta.lore(List.of(MessageUtil.toComponent(loreMsg)));
-            item.setItemMeta(meta);
-        }
+                                              String enabledCfgKey, String disabledCfgKey,
+                                              Material enabledMat, Material disabledMat,
+                                              String nameOnKey, String nameOffKey,
+                                              String loreOnKey, String loreOffKey) {
+        String cfgKey = enabled ? enabledCfgKey : disabledCfgKey;
+        Material fallback = enabled ? enabledMat : disabledMat;
+
+        ItemStack item = ItemResolver.resolveAppearance(
+                cfg != null ? cfg.getConfigurationSection(cfgKey) : null, fallback);
+
+        ItemResolver.applyText(item,
+                plugin.getConfigManager().getMessage(enabled ? nameOnKey : nameOffKey),
+                List.of(plugin.getConfigManager().getMessage(enabled ? loreOnKey : loreOffKey)));
         return item;
     }
 

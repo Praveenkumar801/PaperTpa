@@ -1,14 +1,39 @@
-# TpShield Messages Configuration
-# All messages support color codes and placeholders
+# ══════════════════════════════════════════════════════════════
+#  TpShield — Messages
+#  Plugin:  TpShield
+#  Author:  IndrajeethY
+#  Source:  https://github.com/Praveenkumar801/TpShield
+# ══════════════════════════════════════════════════════════════
+#
+#  This file is the single source of truth for every piece of
+#  text shown to players — chat messages, action-bar strings,
+#  GUI titles, item names, and item lore.
+#
+#  Color codes  – use legacy &-codes  (e.g. &a, &c, &e, &7)
+#                 or MiniMessage tags (e.g. <green>, <red>).
+#  Placeholders – documented per section; surrounded by %…%.
+#
+#  GUI layout (slot positions, materials, sounds) lives in
+#  config.yml instead of here.
+#
+# ══════════════════════════════════════════════════════════════
 
-# General messages
+# ─────────────────────────────────────────────
+#  General
+# ─────────────────────────────────────────────
 general:
+  # Prefix prepended to most plugin messages.
   prefix: "&7[&6TpShield&7] &r"
+  # Shown when a command is run from the console or a non-player sender.
   player-only: "&cThis command can only be used by players."
+  # Shown when a player lacks the required permission.
   no-permission: "&cYou don't have permission to use this command."
+  # Shown when the target player cannot be found online.
   player-not-found: "&cPlayer not found."
 
-# Command-specific messages
+# ─────────────────────────────────────────────
+#  Command usage hints
+# ─────────────────────────────────────────────
 commands:
   tpa:
     usage: "&cUsage: /tpa <player>"
@@ -16,7 +41,10 @@ commands:
   tpaview:
     usage: "&cUsage: /tpaview <player>"
 
-# Request messages
+# ─────────────────────────────────────────────
+#  TPA request lifecycle
+#  Placeholders: %player%
+# ─────────────────────────────────────────────
 requests:
   sent: "&aYou have sent a teleport request to &e%player%&a."
   received: "&e%player% &ahas requested to teleport to you."
@@ -37,7 +65,11 @@ requests:
   sender-left: "&cYour teleport request was cancelled because &e%player% &cleft the server."
   target-left: "&cYour teleport request to &e%player% &cwas cancelled (they left the server)."
 
-# Teleport messages (countdown / cancel sent via action bar)
+# ─────────────────────────────────────────────
+#  Teleport countdown & cancellation
+#  (shown on the action bar)
+#  Placeholders: %time%
+# ─────────────────────────────────────────────
 teleport:
   unsafe: "&cCannot teleport: The target location is unsafe!"
   starting-bar: "&eTeleporting in &6%time%s&e... Don't move!"
@@ -45,51 +77,77 @@ teleport:
   cancelled-moved: "&cTeleport cancelled! You moved."
   cancelled: "&aTeleport cancelled."
 
-# Cooldown messages
+# ─────────────────────────────────────────────
+#  Cooldown
+#  Placeholders: %time%
+# ─────────────────────────────────────────────
 cooldown:
   message: "&cYou must wait &e%time% &cseconds before sending another request!"
 
-# Toggle messages (used by /tptoggle)
+# ─────────────────────────────────────────────
+#  Toggle commands
+#  /tptoggle — enable / disable incoming TP requests
+#  Placeholders: %player%
+# ─────────────────────────────────────────────
 toggle:
   enabled: "&aTeleport requests have been &2enabled&a."
   disabled: "&cTeleport requests have been &4disabled&c."
   target-has-tp-disabled: "&c%player% has teleport requests disabled."
 
-# Notification toggle messages (used by /tpnotify)
+# ─────────────────────────────────────────────
+#  /tpnotify — enable / disable rating notifications
+# ─────────────────────────────────────────────
 notify:
   enabled: "&aPost-teleport rating notifications &2enabled&a."
   disabled: "&cPost-teleport rating notifications &4disabled&c."
 
-# Auto-accept toggle messages (used by /tpauto)
+# ─────────────────────────────────────────────
+#  /tpauto — enable / disable auto-accept
+# ─────────────────────────────────────────────
 auto:
   enabled: "&aAuto-accept has been &2enabled&a. All incoming requests will be accepted automatically."
   disabled: "&cAuto-accept has been &4disabled&c."
 
-# Interactive UI messages (chat buttons shown with request notification)
+# ─────────────────────────────────────────────
+#  Interactive chat UI
+#  (clickable buttons shown alongside request notification)
+# ─────────────────────────────────────────────
 ui:
   button:
     view: "&e[View Request]"
   hover:
     view: "&eClick to view the teleport request details"
 
-# Request list messages
+# ─────────────────────────────────────────────
+#  /tplist output
+#  Placeholders: %player%
+# ─────────────────────────────────────────────
 list:
   header: "&6--- Your Teleport Requests ---"
   received: "&7Received from: &e%player%"
   sent: "&7Sent to: &e%player%"
 
-# Admin messages
+# ─────────────────────────────────────────────
+#  Admin / operator messages
+# ─────────────────────────────────────────────
 admin:
-  config-reloading: "&eReloading EasyTPA configuration..."
+  config-reloading: "&eReloading TpShield configuration..."
   config-reloaded: "&aConfiguration has been reloaded successfully!"
   nothing-to-cancel: "&cYou have nothing to cancel."
 
-# Post-teleport immunity messages (shown on action bar)
+# ─────────────────────────────────────────────
+#  Post-teleport immunity countdown
+#  (shown on the action bar)
+#  Placeholders: %time%
+# ─────────────────────────────────────────────
 immunity:
   countdown: "&aImmunity: &e%time%s &aremaining"
   expired: "&7Post-teleport immunity expired."
 
-# Rating messages
+# ─────────────────────────────────────────────
+#  Post-teleport rating prompts
+#  Placeholders: %player%, %stars%
+# ─────────────────────────────────────────────
 rating:
   prompt: "&eHow was your teleport experience?"
   rate-button: "&e[Rate]"
@@ -97,63 +155,115 @@ rating:
   submitted: "&aYou rated &e%player% &a%stars% star(s). Thank you!"
   expired: "&cYour rating session has expired."
 
-# GUI strings — edit these to customise every item name, lore line, and label shown in GUIs
+# ══════════════════════════════════════════════════════════════
+#  GUI text
+#  All inventory titles, item display names, and lore lines for
+#  every GUI opened by this plugin are defined below.
+#
+#  Layout (slot positions, sizes, materials) is in config.yml.
+# ══════════════════════════════════════════════════════════════
 gui:
-  # Inventory titles
+
+  # ── Inventory titles ────────────────────────────────────────
+  #  Placeholders: %player% (stats and settings titles only)
   titles:
     request: "&6Teleport Request"
     stats: "&6Player Info — &e%player%"
     settings: "&6Your TPA Settings"
     rating: "&6Rate your experience"
-  # Reputation tier label substituted for %tpa_reputation_tier% in stats lore
-  reputation:
-    unrated: "&7Unrated"
-    suspicious: "&cSuspicious"
-    trusted: "&aTrusted"
-    neutral: "&eNeutral"
-  # ON / OFF state labels substituted for %state% in the trap-report toggle item
+
+  # ── Shared state labels ──────────────────────────────────────
+  #  Used wherever a toggle shows ON/OFF (e.g. trap-report item).
   state:
-    "on": "&cON"
+    "on":  "&cON"
     "off": "&aOFF"
-  # Request GUI (shown to the TPA target)
+
+  # ── Reputation tier labels ───────────────────────────────────
+  #  Substituted for the %tpa_reputation_tier% placeholder.
+  reputation:
+    unrated:    "&7Unrated"
+    suspicious: "&cSuspicious"
+    trusted:    "&aTrusted"
+    neutral:    "&eNeutral"
+
+  # ── Request GUI (shown to the TPA target) ───────────────────
+  #  Placeholders:
+  #    head-name         : %player%
+  #    head-location     : %x%, %y%, %z%
+  #    head-dimension    : %dimension%
+  #    head-trap-percent : %tpa_trap_percent%
+  #    head-rating       : %tpa_rating%
   request:
     head-name: "&e%player%"
-    accept-name: "&aAccept"
-    deny-name: "&cDeny"
-    location: "&7Location: &f%x%, %y%, %z%"
-    dimension: "&7Dimension: &f%dimension%"
-    trap-percent: "&7Trap %%: &f%tpa_trap_percent%%%"
-    rating: "&7Rating: &f%tpa_rating% ⭐"
-  # Stats / player-info GUI
+    head-location: "&7Location: &f%x%, %y%, %z%"
+    head-dimension: "&7Dimension: &f%dimension%"
+    head-trap-percent: "&7Trap %%: &f%tpa_trap_percent%%%"
+    head-rating: "&7Rating: &f%tpa_rating% ⭐"
+    accept-name: "&a✔ Accept"
+    accept-lore: "&7Click to accept the teleport request"
+    deny-name: "&c✘ Deny"
+    deny-lore: "&7Click to deny the teleport request"
+
+  # ── Stats / Player Info GUI (/tpstats) ───────────────────────
+  #  Placeholders:
+  #    head-name      : %player%
+  #    sent           : %tpa_sent%
+  #    received       : %tpa_received%
+  #    accepted       : %tpa_accepted%
+  #    denied         : %tpa_denied%
+  #    trap-percent   : %tpa_trap_percent%
+  #    rating         : %tpa_rating%
+  #    total-ratings  : %tpa_total_ratings%
+  #    reputation     : %tpa_reputation_tier%
   stats:
     head-name: "&e%player%"
     sent: "&7Sent: &f%tpa_sent%"
     received: "&7Received: &f%tpa_received%"
     accepted: "&7Accepted: &f%tpa_accepted%"
     denied: "&7Denied: &f%tpa_denied%"
-  # Settings GUI (/tpsettings)
+    trap-percent: "&7Trap %%: &f%tpa_trap_percent%%%"
+    rating: "&7Rating: &f%tpa_rating% ⭐"
+    total-ratings: "&7Total Ratings: &f%tpa_total_ratings%"
+    reputation: "&7Reputation: %tpa_reputation_tier%"
+
+  # ── Settings GUI (/tpsettings) ───────────────────────────────
+  #  Placeholders:
+  #    head-*        : %player%, %tpa_sent%, %tpa_received%,
+  #                    %tpa_accepted%, %tpa_denied%, %tpa_rating%
   settings:
     head-name: "&e%player%"
     head-sent: "&7Sent: &f%tpa_sent%"
     head-received: "&7Received: &f%tpa_received%"
+    head-accepted: "&7Accepted: &f%tpa_accepted%"
+    head-denied: "&7Denied: &f%tpa_denied%"
     head-rating: "&7Rating: &f%tpa_rating% ⭐"
+    # TP requests toggle
     tp-requests-on: "&aTeleport Requests: &2ON"
     tp-requests-off: "&cTeleport Requests: &4OFF"
     tp-requests-lore-on: "&7Click to &cdisable &7TP requests."
     tp-requests-lore-off: "&7Click to &aenable &7TP requests."
+    # Auto-accept toggle
     autotp-on: "&aAuto-Accept TP: &2ON"
     autotp-off: "&cAuto-Accept TP: &4OFF"
     autotp-lore-on: "&7Click to &cdisable &7auto-accept."
     autotp-lore-off: "&7Click to &aenable &7auto-accept."
+    # Rating notification toggle
     notifications-on: "&aRating Notifications: &2ON"
     notifications-off: "&cRating Notifications: &4OFF"
     notifications-lore-on: "&7Click to &cdisable &7rating prompts."
     notifications-lore-off: "&7Click to &aenable &7rating prompts."
-  # Rating GUI
+
+  # ── Rating GUI ───────────────────────────────────────────────
+  #  Placeholders:
+  #    star-filled / star-empty / star-lore : %stars%
+  #    trap-name                            : %state%
   rating:
     star-filled: "&e%stars% ⭐"
     star-empty: "&7%stars% ⭐"
     star-lore: "&7Click to select %stars% star(s)"
     trap-name: "&c\uD83D\uDEA9 Report Trap: %state%"
+    trap-lore: "&7Toggle on if you were trapped"
     confirm-ready: "&aConfirm Rating"
     confirm-not-ready: "&7Select stars first"
+    confirm-lore: "&7Submit your rating"
+

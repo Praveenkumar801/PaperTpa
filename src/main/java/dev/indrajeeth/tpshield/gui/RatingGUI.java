@@ -3,22 +3,22 @@ package dev.indrajeeth.tpshield.gui;
 import dev.indrajeeth.tpshield.TpShield;
 import dev.indrajeeth.tpshield.model.RatingSession;
 import dev.indrajeeth.tpshield.util.ItemResolver;
-import dev.indrajeeth.tpshield.util.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Post-teleport rating GUI. Allows the teleported player to pick 1–5 stars
  * and optionally report a trap, then confirm their rating.
+ *
+ * Layout (slots, size) is read from {@code config.yml → gui.rating}.
+ * All display text is read from {@code messages.yml → gui.rating}.
  */
 public class RatingGUI implements InventoryHolder {
 
@@ -33,10 +33,10 @@ public class RatingGUI implements InventoryHolder {
         this.session = session;
 
         ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.rating");
-        String title = cfg != null
-                ? cfg.getString("title", plugin.getConfigManager().getMessage("gui.titles.rating"))
-                : plugin.getConfigManager().getMessage("gui.titles.rating");
-        int size     = cfg != null ? cfg.getInt("size", 27) : 27;
+
+        // Title always comes from messages.yml
+        String title = plugin.getConfigManager().getMessage("gui.titles.rating");
+        int size = cfg != null ? cfg.getInt("size", 27) : 27;
 
         this.inventory = Bukkit.createInventory(this, size,
                 net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
@@ -50,11 +50,13 @@ public class RatingGUI implements InventoryHolder {
         ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.rating");
         int size = inventory.getSize();
 
-        ItemStack filler = cfg != null
-                ? ItemResolver.resolve(cfg.getConfigurationSection("filler-item"))
-                : new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        // Fill background
+        ItemStack filler = ItemResolver.resolveAppearance(
+                cfg != null ? cfg.getConfigurationSection("filler-item") : null,
+                Material.GRAY_STAINED_GLASS_PANE);
         for (int i = 0; i < size; i++) inventory.setItem(i, filler);
 
+        // Star buttons (1–5)
         int[] starSlots = DEFAULT_STAR_SLOTS;
         if (cfg != null) {
             List<?> raw = cfg.getList("star-slots");
@@ -67,71 +69,55 @@ public class RatingGUI implements InventoryHolder {
             inventory.setItem(starSlots[i], buildStarItem(plugin, cfg, stars, session.getStars() >= stars));
         }
 
+        // Trap-report toggle
         int trapSlot = cfg != null ? cfg.getInt("trap-report-slot", DEFAULT_TRAP_SLOT) : DEFAULT_TRAP_SLOT;
         inventory.setItem(trapSlot, buildTrapItem(plugin, cfg, session.isTrapReport()));
 
+        // Confirm button
         int confirmSlot = cfg != null ? cfg.getInt("confirm-slot", DEFAULT_CONFIRM_SLOT) : DEFAULT_CONFIRM_SLOT;
         inventory.setItem(confirmSlot, buildConfirmItem(plugin, cfg, session.isReady()));
     }
 
     private static ItemStack buildStarItem(TpShield plugin, ConfigurationSection cfg,
                                             int stars, boolean filled) {
-        ConfigurationSection starCfg = cfg != null ? cfg.getConfigurationSection("star-item") : null;
-
-        if (starCfg != null) {
-            return ItemResolver.resolve(starCfg, Map.of("stars", String.valueOf(stars)));
-        }
+        Material fallback = filled ? Material.GOLDEN_SWORD : Material.STONE_SWORD;
+        ItemStack item = ItemResolver.resolveAppearance(
+                cfg != null ? cfg.getConfigurationSection("star-item") : null, fallback);
 
         String nameKey = filled ? "gui.rating.star-filled" : "gui.rating.star-empty";
-        String name = plugin.getConfigManager().getMessage(nameKey,
-                Map.of("stars", String.valueOf(stars)));
-        String loreStr = plugin.getConfigManager().getMessage("gui.rating.star-lore",
-                Map.of("stars", String.valueOf(stars)));
-
-        Material mat  = filled ? Material.GOLDEN_SWORD : Material.STONE_SWORD;
-        ItemStack item = new ItemStack(mat);
-        ItemMeta  meta = item.getItemMeta();
-        if (meta != null) {
-            meta.displayName(MessageUtil.toComponent(name));
-            List<net.kyori.adventure.text.Component> lore = new ArrayList<>();
-            lore.add(MessageUtil.toComponent(loreStr));
-            meta.lore(lore);
-            item.setItemMeta(meta);
-        }
+        Map<String, String> ph = Map.of("stars", String.valueOf(stars));
+        ItemResolver.applyText(item,
+                plugin.getConfigManager().getMessage(nameKey, ph),
+                List.of(plugin.getConfigManager().getMessage("gui.rating.star-lore", ph)),
+                ph);
         return item;
     }
 
-    private static ItemStack buildTrapItem(TpShield plugin, ConfigurationSection cfg, boolean trapOn) {
-        ConfigurationSection trapCfg = cfg != null ? cfg.getConfigurationSection("trap-report-item") : null;
+    private static ItemStack buildTrapItem(TpShield plugin, ConfigurationSection cfg,
+                                            boolean trapOn) {
+        Material fallback = trapOn ? Material.RED_CONCRETE : Material.GREEN_CONCRETE;
+        ItemStack item = ItemResolver.resolveAppearance(
+                cfg != null ? cfg.getConfigurationSection("trap-report-item") : null, fallback);
+
         String stateMsg = plugin.getConfigManager().getMessage(trapOn ? "gui.state.on" : "gui.state.off");
-        if (trapCfg != null) {
-            return ItemResolver.resolve(trapCfg, Map.of("state", stateMsg));
-        }
-        Material mat  = trapOn ? Material.RED_CONCRETE : Material.GREEN_CONCRETE;
-        ItemStack item = new ItemStack(mat);
-        ItemMeta  meta = item.getItemMeta();
-        if (meta != null) {
-            String trapName = plugin.getConfigManager().getMessage("gui.rating.trap-name",
-                    Map.of("state", stateMsg));
-            meta.displayName(MessageUtil.toComponent(trapName));
-            item.setItemMeta(meta);
-        }
+        ItemResolver.applyText(item,
+                plugin.getConfigManager().getMessage("gui.rating.trap-name",
+                        Map.of("state", stateMsg)),
+                List.of(plugin.getConfigManager().getMessage("gui.rating.trap-lore")));
         return item;
     }
 
-    private static ItemStack buildConfirmItem(TpShield plugin, ConfigurationSection cfg, boolean ready) {
-        ConfigurationSection confirmCfg = cfg != null ? cfg.getConfigurationSection("confirm-item") : null;
-        Material mat = ready ? Material.EMERALD : Material.BARRIER;
-        if (confirmCfg != null && ready) {
-            return ItemResolver.resolve(confirmCfg);
-        }
-        ItemStack item = new ItemStack(mat);
-        ItemMeta  meta = item.getItemMeta();
-        if (meta != null) {
-            String msgKey = ready ? "gui.rating.confirm-ready" : "gui.rating.confirm-not-ready";
-            meta.displayName(MessageUtil.toComponent(plugin.getConfigManager().getMessage(msgKey)));
-            item.setItemMeta(meta);
-        }
+    private static ItemStack buildConfirmItem(TpShield plugin, ConfigurationSection cfg,
+                                               boolean ready) {
+        Material fallback = ready ? Material.EMERALD : Material.BARRIER;
+        ItemStack item = ItemResolver.resolveAppearance(
+                ready && cfg != null ? cfg.getConfigurationSection("confirm-item") : null, fallback);
+
+        String nameKey = ready ? "gui.rating.confirm-ready" : "gui.rating.confirm-not-ready";
+        ItemResolver.applyText(item,
+                plugin.getConfigManager().getMessage(nameKey),
+                ready ? List.of(plugin.getConfigManager().getMessage("gui.rating.confirm-lore"))
+                      : List.of());
         return item;
     }
 
@@ -139,7 +125,7 @@ public class RatingGUI implements InventoryHolder {
     public Inventory getInventory() { return inventory; }
     public RatingSession getSession() { return session; }
 
-    /** Returns the star value (1-5) for the clicked slot, or -1 if not a star slot. */
+    /** Returns the star value (1–5) for the clicked slot, or -1 if not a star slot. */
     public int getStarForSlot(TpShield plugin, int slot) {
         ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.rating");
         int[] starSlots = DEFAULT_STAR_SLOTS;
