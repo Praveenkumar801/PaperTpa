@@ -34,6 +34,16 @@ public class TeleportRequestManager {
     private final Map<UUID, Long> immunePlayers = new ConcurrentHashMap<>();
     private final Set<UUID> pendingRatingScheduled = ConcurrentHashMap.newKeySet();
 
+    /**
+     * Holds requests that have been accepted by the target but are awaiting
+     * confirmation from the sender before the teleport fires.
+     * Key: requesterId (sender), Value: AcceptedRequest data (accepter + destination)
+     */
+    private final Map<UUID, AcceptedRequest> acceptedPending = new ConcurrentHashMap<>();
+
+    /** Immutable snapshot of an accepted request awaiting sender confirmation. */
+    private record AcceptedRequest(UUID accepterId, Location destination, long acceptTime) {}
+
     /** Extra grace period to retain expired cooldown entries before purging. */
     private static final long COOLDOWN_GRACE_PERIOD_MS = 60_000L;
 
@@ -108,34 +118,85 @@ public class TeleportRequestManager {
 
         database.incrementStat(accepterId, "total_accepted");
 
-        requesterToTarget.put(requesterId, accepterId);
-
-        final boolean captureLocation = plugin.getConfigManager().captureLocationOnAccept();
-        final Location captured       = captureLocation ? accepter.getLocation().clone() : null;
-
-        Bukkit.getScheduler().runTask(plugin, () -> {
-            Player req = Bukkit.getPlayer(requesterId);
-            Player acc = Bukkit.getPlayer(accepterId);
-            if (req == null) {
-                requesterToTarget.remove(requesterId);
-                return;
-            }
-
-            Location dest;
-            if (captureLocation && captured != null
-                    && captured.getWorld() != null
-                    && Bukkit.getWorld(captured.getWorld().getUID()) != null) {
-                dest = captured;
-            } else if (acc != null) {
-                dest = acc.getLocation();
-            } else {
-                requesterToTarget.remove(requesterId);
-                return;
-            }
-            teleportPlayer(req, dest);
-        });
+        // Capture destination at accept time so the sender can confirm later
+        Location destination = accepter.getLocation().clone();
+        acceptedPending.put(requesterId, new AcceptedRequest(accepterId, destination, System.currentTimeMillis()));
 
         return CompletableFuture.completedFuture(true);
+    }
+
+    /**
+     * Called when the original sender confirms they want to proceed with the teleport
+     * after the target has accepted. Must be called on the main thread.
+     *
+     * @return true if the confirmation was valid and teleport was initiated, false otherwise
+     */
+    public boolean confirmTeleport(Player requester) {
+        UUID requesterId = requester.getUniqueId();
+        AcceptedRequest accepted = acceptedPending.remove(requesterId);
+        if (accepted == null) return false;
+
+        Location dest = accepted.destination();
+        if (dest.getWorld() == null || Bukkit.getWorld(dest.getWorld().getUID()) == null) {
+            // Destination world no longer available — fall back to accepter's current location
+            Player accepter = Bukkit.getPlayer(accepted.accepterId());
+            if (accepter == null) return false;
+            dest = accepter.getLocation();
+        }
+
+        requesterToTarget.put(requesterId, accepted.accepterId());
+        teleportPlayer(requester, dest);
+        return true;
+    }
+
+    /**
+     * Sends the sender a clickable confirmation message after the target has accepted,
+     * including the target's location and buttons to view stats or confirm the teleport.
+     * Must be called on the main thread.
+     */
+    public void sendRequesterAcceptConfirmation(Player requester, Player accepter) {
+        AcceptedRequest accepted = acceptedPending.get(requester.getUniqueId());
+        Location dest = accepted != null ? accepted.destination() : accepter.getLocation();
+
+        String dim = getDimensionName(dest.getWorld());
+        int x = (int) dest.getX(), y = (int) dest.getY(), z = (int) dest.getZ();
+
+        ConfigManager cfg = plugin.getConfigManager();
+
+        Component confirmMsg = MessageUtil.toComponent(
+                cfg.getPrefix() + cfg.getMessage("requests.accepted-awaiting-confirm",
+                        Map.of("player", accepter.getName())));
+        Component locationLine = MessageUtil.toComponent(
+                cfg.getMessage("requests.accepted-location",
+                        Map.of("x", String.valueOf(x), "y", String.valueOf(y),
+                               "z", String.valueOf(z), "dimension", dim)));
+        Component viewButton = MessageUtil.toComponent(cfg.getMessage("ui.button.view-stats"))
+                .clickEvent(ClickEvent.runCommand("/tpaview"))
+                .hoverEvent(HoverEvent.showText(
+                        MessageUtil.toComponent(cfg.getMessage("ui.hover.view-stats",
+                                Map.of("player", accepter.getName())))));
+        Component acceptButton = MessageUtil.toComponent(cfg.getMessage("ui.button.accept-tp"))
+                .clickEvent(ClickEvent.runCommand("/tpconfirm"))
+                .hoverEvent(HoverEvent.showText(
+                        MessageUtil.toComponent(cfg.getMessage("ui.hover.accept-tp",
+                                Map.of("player", accepter.getName())))));
+
+        requester.sendMessage(Component.text()
+                .append(confirmMsg)
+                .append(Component.newline())
+                .append(locationLine)
+                .append(Component.newline())
+                .append(viewButton)
+                .append(Component.text(" "))
+                .append(acceptButton)
+                .build());
+        SoundUtil.play(requester, "request-accepted");
+    }
+
+    /** Returns the accepter's UUID for a sender who has an accepted-pending request, or null. */
+    public UUID getAcceptedRequestTarget(UUID requesterId) {
+        AcceptedRequest accepted = acceptedPending.get(requesterId);
+        return accepted != null ? accepted.accepterId() : null;
     }
 
     public CompletableFuture<Boolean> denyRequest(Player denier, UUID requesterId) {
@@ -426,6 +487,20 @@ public class TeleportRequestManager {
             }
             return false;
         });
+        // Also expire accepted-pending requests where the sender has not confirmed in time
+        acceptedPending.entrySet().removeIf(e -> {
+            if (now - e.getValue().acceptTime() > timeoutMs) {
+                UUID requesterId = e.getKey();
+                Player requester = Bukkit.getPlayer(requesterId);
+                if (requester != null) {
+                    MessageUtil.sendMessageWithPlaceholders(requester,
+                            plugin.getConfigManager().getPrefix()
+                            + plugin.getConfigManager().getMessage("requests.confirm-expired"));
+                }
+                return true;
+            }
+            return false;
+        });
         long cooldownMs = plugin.getConfigManager().getCooldown() * 1000L;
         cooldowns.entrySet().removeIf(e -> now - e.getValue() > cooldownMs + COOLDOWN_GRACE_PERIOD_MS);
     }
@@ -444,6 +519,25 @@ public class TeleportRequestManager {
         if (pt != null) {
             pt.cancelSilently();
         }
+
+        // Clean up accepted-pending where this player was the sender (requester)
+        acceptedPending.remove(playerId);
+
+        // Clean up accepted-pending where this player was the accepter
+        acceptedPending.entrySet().removeIf(e -> {
+            if (e.getValue().accepterId().equals(playerId)) {
+                UUID senderId = e.getKey();
+                Player sender = Bukkit.getPlayer(senderId);
+                if (sender != null) {
+                    MessageUtil.sendMessageWithPlaceholders(sender,
+                            plugin.getConfigManager().getPrefix()
+                            + plugin.getConfigManager().getMessage("requests.confirm-cancelled",
+                                    Map.of("player", player.getName())));
+                }
+                return true;
+            }
+            return false;
+        });
 
         TPARequest sent = activeRequests.remove(playerId);
         if (sent != null) {
@@ -483,6 +577,15 @@ public class TeleportRequestManager {
 
     void cleanupRequesterTarget(UUID playerId) {
         requesterToTarget.remove(playerId);
+    }
+
+    private static String getDimensionName(World world) {
+        if (world == null) return "Unknown";
+        return switch (world.getEnvironment()) {
+            case NETHER  -> "Nether";
+            case THE_END -> "The End";
+            default      -> world.getName();
+        };
     }
 
     public static class PendingTeleport {

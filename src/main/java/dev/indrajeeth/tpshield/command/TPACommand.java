@@ -2,7 +2,6 @@ package dev.indrajeeth.tpshield.command;
 
 import dev.indrajeeth.tpshield.TpShield;
 import dev.indrajeeth.tpshield.util.MessageUtil;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -56,8 +55,6 @@ public class TPACommand extends SimpleCommandHandler {
                         placeholders.put("player", player.getName());
                         String receivedMsg = configManager.getPrefix() + configManager.getMessage("requests.received", placeholders);
                         MessageUtil.sendMessageWithPlaceholders(target, receivedMsg);
-
-                        sendInteractiveRequest(target, player);
                         break;
                         
                     case ALREADY_HAS_REQUEST:
@@ -94,15 +91,6 @@ public class TPACommand extends SimpleCommandHandler {
             return getOnlinePlayerNames(sender);
         }
         return null;
-    }
-
-    private void sendInteractiveRequest(Player target, Player requester) {
-        Component viewButton = MessageUtil.toComponent(configManager.getMessage("ui.button.view"))
-            .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/tpaview " + requester.getName()))
-            .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
-                MessageUtil.toComponent(configManager.getMessage("ui.hover.view"))
-            ));
-        target.sendMessage(viewButton);
     }
 }
 

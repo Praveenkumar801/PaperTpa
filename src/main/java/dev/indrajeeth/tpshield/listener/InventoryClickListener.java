@@ -61,17 +61,16 @@ public class InventoryClickListener implements Listener {
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     Player requester = Bukkit.getPlayer(requesterId);
                     if (success && requester != null && requester.isOnline()) {
-                        Map<String, String> ph = new HashMap<>();
-                        ph.put("player", player.getName());
-                        MessageUtil.sendMessageWithPlaceholders(requester,
-                                plugin.getConfigManager().getPrefix()
-                                + plugin.getConfigManager().getMessage("requests.accepted", ph));
-                        ph.put("player", requester.getName());
+                        // Tell the accepter
+                        Map<String, String> placeholders = new HashMap<>();
+                        placeholders.put("player", requester.getName());
                         MessageUtil.sendMessageWithPlaceholders(player,
                                 plugin.getConfigManager().getPrefix()
-                                + plugin.getConfigManager().getMessage("requests.accepted-target", ph));
-                        SoundUtil.play(player,    "request-accepted");
-                        SoundUtil.play(requester, "request-accepted");
+                                + plugin.getConfigManager().getMessage("requests.accepted-target", placeholders));
+                        SoundUtil.play(player, "request-accepted");
+
+                        // Send the requester a confirmation with view + accept-TP buttons
+                        plugin.getTeleportManager().sendRequesterAcceptConfirmation(requester, player);
                     } else if (!success) {
                         MessageUtil.sendMessageWithPlaceholders(player,
                                 plugin.getConfigManager().getPrefix()

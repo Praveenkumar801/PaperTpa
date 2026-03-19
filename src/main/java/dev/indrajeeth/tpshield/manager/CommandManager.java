@@ -23,6 +23,7 @@ public class CommandManager {
         register("tpcancel",  new TPCancelCommand(plugin));
         register("tplist",    new TPListCommand(plugin));
         register("tpaview",   new TPAViewCommand(plugin));
+        register("tpconfirm", new TPConfirmCommand(plugin));
         register("tpnotify",  new TPNotifyCommand(plugin));
         register("tpauto",    new TPAutoCommand(plugin));
         register("tprate",    new TPRateCommand(plugin));

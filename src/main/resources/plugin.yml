@@ -40,8 +40,13 @@ commands:
     permission: tpshield.tpa
     permission-message: "&cYou don't have permission. Required: tpshield.tpa"
   tpaview:
-    description: Open the GUI for an incoming TPA request
-    usage: /tpaview <player>
+    description: Open stats GUI for the player who accepted your TPA request
+    usage: /tpaview
+    permission: tpshield.tpa
+    permission-message: "&cYou don't have permission. Required: tpshield.tpa"
+  tpconfirm:
+    description: Confirm a teleport after the target has accepted your TPA request
+    usage: /tpconfirm
     permission: tpshield.tpa
     permission-message: "&cYou don't have permission. Required: tpshield.tpa"
   tpnotify:

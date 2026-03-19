@@ -55,6 +55,11 @@ requests:
   no-pending-requests: "&cYou have no pending teleport requests."
   accepted: "&aYour teleport request has been accepted!"
   accepted-target: "&aYou accepted &e%player%&a's teleport request."
+  accepted-awaiting-confirm: "&e%player% &aaccepted your teleport request! Review their info then confirm."
+  accepted-location: "&7Their location: &f%x%, %y%, %z% &7in &f%dimension%"
+  no-accepted-request: "&cYou have no pending teleport confirmation. Ask the target to accept first."
+  confirm-expired: "&cYour teleport confirmation window has expired."
+  confirm-cancelled: "&cTeleport confirmation cancelled — &e%player% &cleft the server."
   denied: "&cYour teleport request has been denied."
   denied-target: "&cYou denied &e%player%&c's teleport request."
   cancelled: "&aYour teleport request has been cancelled."
@@ -115,8 +120,12 @@ auto:
 ui:
   button:
     view: "&e[View Request]"
+    view-stats: "&e[View Stats]"
+    accept-tp: "&a[Accept TP]"
   hover:
     view: "&eClick to view the teleport request details"
+    view-stats: "&eClick to view &e%player%&e's stats and reputation"
+    accept-tp: "&aClick to confirm and teleport to &a%player%"
 
 # ─────────────────────────────────────────────
 #  /tplist output
