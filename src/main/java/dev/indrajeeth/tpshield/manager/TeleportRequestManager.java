@@ -80,7 +80,7 @@ public class TeleportRequestManager {
             }
 
             long now = System.currentTimeMillis();
-            TPARequest request = new TPARequest(requesterId, targetId, now, requesterLoc);
+            TPARequest request = new TPARequest(requesterId, targetId, now, requesterLoc, false);
             activeRequests.put(requesterId, request);
             cooldowns.put(requesterId, now);
             database.updateLastRequestTime(requesterId, now);
@@ -100,28 +100,85 @@ public class TeleportRequestManager {
         REQUESTS_DISABLED
     }
 
-    public CompletableFuture<Boolean> acceptRequest(Player accepter, UUID requesterId) {
+    /** Result returned by {@link #acceptRequest}. */
+    public enum AcceptResult {
+        /** Normal TPA accept — requester still needs to confirm via GUI or /tpconfirm. */
+        NORMAL,
+        /** tpahere accept — target has been teleported to the requester immediately. */
+        HERE,
+        /** No matching pending request was found. */
+        FAILED
+    }
+
+    /**
+     * Sends a /tpahere request: requester asks the target to teleport to them.
+     * Must be called on the main thread.
+     */
+    public CompletableFuture<RequestResult> sendHereRequest(Player requester, Player target) {
+        UUID requesterId = requester.getUniqueId();
+        UUID targetId    = target.getUniqueId();
+
+        TPARequest existing = activeRequests.get(requesterId);
+        if (existing != null && existing.getTargetId().equals(targetId)) {
+            return CompletableFuture.completedFuture(RequestResult.ALREADY_HAS_REQUEST);
+        }
+
+        if (!requester.hasPermission("tpshield.cooldown.bypass")) {
+            long last = cooldowns.getOrDefault(requesterId, 0L);
+            long cooldownMs = plugin.getConfigManager().getCooldown() * 1000L;
+            if (System.currentTimeMillis() - last < cooldownMs) {
+                return CompletableFuture.completedFuture(RequestResult.ON_COOLDOWN);
+            }
+        }
+
+        Location requesterLoc = requester.getLocation().clone();
+
+        return database.areRequestsEnabled(targetId).thenCompose(enabled -> {
+            if (!enabled && !requester.hasPermission("tpshield.bypass")) {
+                return CompletableFuture.completedFuture(RequestResult.REQUESTS_DISABLED);
+            }
+
+            long now = System.currentTimeMillis();
+            TPARequest request = new TPARequest(requesterId, targetId, now, requesterLoc, true);
+            activeRequests.put(requesterId, request);
+            cooldowns.put(requesterId, now);
+            database.updateLastRequestTime(requesterId, now);
+            database.incrementStat(requesterId, "total_sent");
+            database.incrementStat(targetId,    "total_received");
+
+            return database.isAutoAcceptEnabled(targetId)
+                .thenApply(autoAccept -> autoAccept ? RequestResult.AUTO_ACCEPTED : RequestResult.SUCCESS);
+        });
+    }
+
+    public CompletableFuture<AcceptResult> acceptRequest(Player accepter, UUID requesterId) {
         UUID accepterId = accepter.getUniqueId();
         TPARequest request = activeRequests.get(requesterId);
         if (request == null || !request.getTargetId().equals(accepterId)) {
-            return CompletableFuture.completedFuture(false);
+            return CompletableFuture.completedFuture(AcceptResult.FAILED);
         }
 
         if (!activeRequests.remove(requesterId, request)) {
-            return CompletableFuture.completedFuture(false);
+            return CompletableFuture.completedFuture(AcceptResult.FAILED);
         }
 
         Player requester = Bukkit.getPlayer(requesterId);
         if (requester == null) {
-            return CompletableFuture.completedFuture(false);
+            return CompletableFuture.completedFuture(AcceptResult.FAILED);
         }
 
         database.incrementStat(accepterId, "total_accepted");
 
+        if (request.isReverse()) {
+            Location destination = requester.getLocation().clone();
+            requesterToTarget.put(accepterId, requesterId);
+            teleportPlayer(accepter, destination);
+            return CompletableFuture.completedFuture(AcceptResult.HERE);
+        }
+
         Location destination = accepter.getLocation().clone();
         acceptedPending.put(requesterId, new AcceptedRequest(accepterId, destination, System.currentTimeMillis()));
-
-        return CompletableFuture.completedFuture(true);
+        return CompletableFuture.completedFuture(AcceptResult.NORMAL);
     }
 
     /**

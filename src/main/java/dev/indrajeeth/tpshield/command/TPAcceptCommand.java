@@ -65,14 +65,29 @@ public class TPAcceptCommand extends SimpleCommandHandler {
         requestManager.acceptRequest(accepter, requesterId).thenAccept(result -> {
             Bukkit.getScheduler().runTask(plugin, () -> {
                 Player requester = Bukkit.getPlayer(requesterId);
-                if (result && requester != null && requester.isOnline()) {
+                if (result == TeleportRequestManager.AcceptResult.NORMAL) {
+                    if (requester != null && requester.isOnline()) {
+                        Map<String, String> placeholders = new HashMap<>();
+                        placeholders.put("player", requester.getName());
+                        MessageUtil.sendMessageWithPlaceholders(accepter,
+                                configManager.getPrefix() + configManager.getMessage("requests.accepted-target", placeholders));
+                        SoundUtil.play(accepter, "request-accepted");
+                        requestManager.sendRequesterAcceptConfirmation(requester, accepter);
+                    } else {
+                        MessageUtil.sendMessageWithPlaceholders(accepter,
+                                configManager.getPrefix() + configManager.getMessage("requests.no-pending-request"));
+                    }
+                } else if (result == TeleportRequestManager.AcceptResult.HERE) {
                     Map<String, String> placeholders = new HashMap<>();
-                    placeholders.put("player", requester.getName());
+                    placeholders.put("player", requester != null ? requester.getName() : "");
                     MessageUtil.sendMessageWithPlaceholders(accepter,
-                            configManager.getPrefix() + configManager.getMessage("requests.accepted-target", placeholders));
+                            configManager.getPrefix() + configManager.getMessage("requests.here-accepted-target", placeholders));
                     SoundUtil.play(accepter, "request-accepted");
-
-                    requestManager.sendRequesterAcceptConfirmation(requester, accepter);
+                    if (requester != null && requester.isOnline()) {
+                        placeholders.put("player", accepter.getName());
+                        MessageUtil.sendMessageWithPlaceholders(requester,
+                                configManager.getPrefix() + configManager.getMessage("requests.here-accepted-requester", placeholders));
+                    }
                 } else {
                     MessageUtil.sendMessageWithPlaceholders(accepter,
                             configManager.getPrefix() + configManager.getMessage("requests.no-pending-request"));

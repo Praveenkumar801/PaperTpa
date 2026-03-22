@@ -14,6 +14,11 @@ commands:
     usage: /tpa <player>
     permission: tpshield.tpa
     permission-message: "&cYou don't have permission. Required: tpshield.tpa"
+  tpahere:
+    description: Request a player to teleport to you
+    usage: /tpahere <player>
+    permission: tpshield.tpa
+    permission-message: "&cYou don't have permission. Required: tpshield.tpa"
   tpaccept:
     description: Accept a teleport request
     usage: /tpaccept [player]

@@ -38,6 +38,9 @@ commands:
   tpa:
     usage: "&cUsage: /tpa <player>"
     cannot-teleport-self: "&cYou cannot send a teleport request to yourself."
+  tpahere:
+    usage: "&cUsage: /tpahere <player>"
+    cannot-teleport-self: "&cYou cannot send a teleport here request to yourself."
 
 # ─────────────────────────────────────────────
 #  TPA request lifecycle
@@ -46,6 +49,10 @@ commands:
 requests:
   sent: "&aYou have sent a teleport request to &e%player%&a."
   received: "&e%player% &ahas requested to teleport to you."
+  here-sent: "&aYou have requested &e%player% &ato teleport to you."
+  here-received: "&e%player% &ahas requested you to teleport to them."
+  here-accepted-requester: "&e%player% &aaccepted your request and is teleporting to you!"
+  here-accepted-target: "&aYou accepted &e%player%&a's request. Teleporting to them..."
   already-has-request: "&cThis player already has a pending teleport request!"
   expired: "&cThe teleport request has expired."
   expired-target: "&cThe teleport request has expired!"

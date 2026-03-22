@@ -17,6 +17,7 @@ public class CommandManager {
 
     public void registerCommands() {
         register("tpa",       new TPACommand(plugin));
+        register("tpahere",   new TPAHereCommand(plugin));
         register("tpaccept",  new TPAcceptCommand(plugin));
         register("tpdeny",    new TPDenyCommand(plugin));
         register("tptoggle",  new TPToggleCommand(plugin));
