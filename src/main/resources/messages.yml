@@ -88,6 +88,13 @@ cooldown:
   message: "&cYou must wait &e%time% &cseconds before sending another request!"
 
 # ─────────────────────────────────────────────
+#  Combat tag
+#  Placeholders: %time%
+# ─────────────────────────────────────────────
+combat:
+  blocked: "&cYou cannot use teleport commands while in combat! &e(%time%s remaining)"
+
+# ─────────────────────────────────────────────
 #  Toggle commands
 #  /tptoggle — enable / disable incoming TP requests
 #  Placeholders: %player%

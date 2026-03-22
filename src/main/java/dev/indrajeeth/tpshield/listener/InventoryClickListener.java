@@ -78,6 +78,16 @@ public class InventoryClickListener implements Listener {
         int cancelSlot = cfg != null ? cfg.getInt("deny-slot",   15) : 15;
 
         if (slot == acceptSlot) {
+            if (plugin.getConfigManager().isCombatTagEnabled()
+                    && !player.hasPermission("tpshield.combat.bypass")
+                    && plugin.getCombatManager().isInCombat(player.getUniqueId())) {
+                long remaining = plugin.getCombatManager().getRemainingSeconds(player.getUniqueId());
+                java.util.Map<String, String> placeholders = java.util.Map.of("time", String.valueOf(remaining));
+                MessageUtil.sendMessageWithPlaceholders(player,
+                        plugin.getConfigManager().getPrefix()
+                        + plugin.getConfigManager().getMessage("combat.blocked", placeholders));
+                return;
+            }
             player.closeInventory();
             boolean confirmed = plugin.getTeleportManager().confirmTeleport(player);
             if (!confirmed) {

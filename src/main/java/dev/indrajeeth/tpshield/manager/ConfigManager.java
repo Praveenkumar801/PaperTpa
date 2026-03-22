@@ -127,6 +127,16 @@ public class ConfigManager {
         return config.getInt("settings.tp-idle.time", 5);
     }
 
+    /** Returns {@code true} when the combat-tag system is enabled in config. */
+    public boolean isCombatTagEnabled() {
+        return config.getBoolean("settings.combat-tag.enabled", true);
+    }
+
+    /** Returns the number of seconds a player stays tagged after PvP damage. */
+    public int getCombatTagDuration() {
+        return config.getInt("settings.combat-tag.duration", 15);
+    }
+
     /**
      * Returns the ConfigurationSection for a GUI item path, e.g.
      * {@code "gui.request.accept-item"}.

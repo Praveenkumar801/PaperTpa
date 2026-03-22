@@ -27,6 +27,7 @@ public class TPAcceptCommand extends SimpleCommandHandler {
 
         Player player = (Player) sender;
         if (!checkPermission(player, "tpshield.tpaccept")) return true;
+        if (!checkNotInCombat(player)) return true;
 
         if (args.length == 0) {
             List<UUID> pending = requestManager.getPendingRequestsFor(player.getUniqueId());

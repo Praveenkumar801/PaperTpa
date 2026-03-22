@@ -37,6 +37,12 @@ settings:
     enabled: false
     # Seconds the player must remain still before the teleport executes.
     time: 5
+  # Block TP commands while a player is in combat.
+  combat-tag:
+    # Set true to enable the combat-tag system.
+    enabled: true
+    # Seconds a player stays tagged after giving or receiving PvP damage.
+    duration: 15
 
 # ─────────────────────────────────────────────
 #  Notification sounds

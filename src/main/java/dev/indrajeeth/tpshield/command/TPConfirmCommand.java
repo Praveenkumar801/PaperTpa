@@ -27,6 +27,7 @@ public class TPConfirmCommand extends SimpleCommandHandler {
             return true;
         }
         if (!checkPermission(player, "tpshield.tpa")) return true;
+        if (!checkNotInCombat(player)) return true;
 
         boolean confirmed = requestManager.confirmTeleport(player);
         if (!confirmed) {

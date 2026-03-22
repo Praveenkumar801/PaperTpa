@@ -30,6 +30,7 @@ public class TPACommand extends SimpleCommandHandler {
 
         Player player = (Player) sender;
         if (!checkPermission(player, "tpshield.tpa")) return true;
+        if (!checkNotInCombat(player)) return true;
 
         String targetName = args[0];
         Player target = Bukkit.getPlayer(targetName);

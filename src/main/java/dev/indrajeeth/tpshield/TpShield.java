@@ -3,8 +3,10 @@ package dev.indrajeeth.tpshield;
 import dev.indrajeeth.tpshield.command.BrigadierRegistrar;
 import dev.indrajeeth.tpshield.gui.GUIManager;
 import dev.indrajeeth.tpshield.integration.PlaceholderAPIIntegration;
+import dev.indrajeeth.tpshield.listener.CombatTagListener;
 import dev.indrajeeth.tpshield.listener.ImmunityListener;
 import dev.indrajeeth.tpshield.listener.InventoryClickListener;
+import dev.indrajeeth.tpshield.manager.CombatManager;
 import dev.indrajeeth.tpshield.manager.CommandManager;
 import dev.indrajeeth.tpshield.manager.ConfigManager;
 import dev.indrajeeth.tpshield.manager.DatabaseManager;
@@ -26,6 +28,7 @@ public class TpShield extends JavaPlugin {
     private ConfigManager configManager;
     private DatabaseManager databaseManager;
     private TeleportRequestManager teleportManager;
+    private CombatManager combatManager;
     private GUIManager guiManager;
     private CommandManager commandManager;
     private PlaceholderAPIIntegration placeholderIntegration;
@@ -53,6 +56,8 @@ public class TpShield extends JavaPlugin {
 
         teleportManager = new TeleportRequestManager(this, databaseManager);
 
+        combatManager = new CombatManager();
+
         guiManager = new GUIManager(this);
 
         commandManager = new CommandManager(this);
@@ -62,6 +67,7 @@ public class TpShield extends JavaPlugin {
 
         Bukkit.getPluginManager().registerEvents(new InventoryClickListener(this), this);
         Bukkit.getPluginManager().registerEvents(new ImmunityListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new CombatTagListener(this), this);
 
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             placeholderIntegration = new PlaceholderAPIIntegration(this);
@@ -111,6 +117,7 @@ public class TpShield extends JavaPlugin {
     public ConfigManager          getConfigManager()    { return configManager; }
     public DatabaseManager        getDatabaseManager()  { return databaseManager; }
     public TeleportRequestManager getTeleportManager()  { return teleportManager; }
+    public CombatManager          getCombatManager()    { return combatManager; }
     public GUIManager             getGUIManager()       { return guiManager; }
     public ExecutorService        getExecutor()         { return executorService; }
 
