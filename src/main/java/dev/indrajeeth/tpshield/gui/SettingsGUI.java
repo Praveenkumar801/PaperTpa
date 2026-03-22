@@ -55,7 +55,6 @@ public class SettingsGUI implements InventoryHolder {
 
         ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.settings");
 
-        // Title always comes from messages.yml
         String rawTitle = plugin.getConfigManager().getMessage("gui.titles.settings");
         int size = cfg != null ? cfg.getInt("size", 27) : 27;
 
@@ -85,17 +84,14 @@ public class SettingsGUI implements InventoryHolder {
         ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.settings");
         int size = inventory.getSize();
 
-        // Fill background
         ItemStack filler = ItemResolver.resolveAppearance(
                 cfg != null ? cfg.getConfigurationSection("filler-item") : null,
                 Material.GRAY_STAINED_GLASS_PANE);
         for (int i = 0; i < size; i++) inventory.setItem(i, filler);
 
-        // Player head with stats
         int headSlot = cfg != null ? cfg.getInt("head-slot", DEFAULT_HEAD_SLOT) : DEFAULT_HEAD_SLOT;
         inventory.setItem(headSlot, buildHeadItem(plugin, cfg, viewer, stats));
 
-        // TP requests toggle
         int reqSlot = cfg != null
                 ? cfg.getInt("tp-requests-slot", DEFAULT_TP_REQUESTS_SLOT) : DEFAULT_TP_REQUESTS_SLOT;
         inventory.setItem(reqSlot, buildToggleItem(plugin, cfg, requestsEnabled,
@@ -104,7 +100,6 @@ public class SettingsGUI implements InventoryHolder {
                 "gui.settings.tp-requests-on",   "gui.settings.tp-requests-off",
                 "gui.settings.tp-requests-lore-on", "gui.settings.tp-requests-lore-off"));
 
-        // Auto-accept toggle
         int autoSlot = cfg != null
                 ? cfg.getInt("autotp-slot", DEFAULT_AUTOTP_SLOT) : DEFAULT_AUTOTP_SLOT;
         inventory.setItem(autoSlot, buildToggleItem(plugin, cfg, autoAccept,
@@ -113,7 +108,6 @@ public class SettingsGUI implements InventoryHolder {
                 "gui.settings.autotp-on",   "gui.settings.autotp-off",
                 "gui.settings.autotp-lore-on", "gui.settings.autotp-lore-off"));
 
-        // Rating notifications toggle
         int notifSlot = cfg != null
                 ? cfg.getInt("notifications-slot", DEFAULT_NOTIFICATIONS_SLOT) : DEFAULT_NOTIFICATIONS_SLOT;
         inventory.setItem(notifSlot, buildToggleItem(plugin, cfg, notificationsEnabled,

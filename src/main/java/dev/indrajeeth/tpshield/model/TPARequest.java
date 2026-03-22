@@ -10,7 +10,7 @@ public final class TPARequest {
     private final UUID requesterId;
     private final UUID targetId;
     private final long requestTime;
-    private final Location requesterLocation; // snapshot on main thread when /tpa was sent
+    private final Location requesterLocation;
 
     public TPARequest(UUID requesterId, UUID targetId, long requestTime, Location requesterLocation) {
         this.requesterId = requesterId;

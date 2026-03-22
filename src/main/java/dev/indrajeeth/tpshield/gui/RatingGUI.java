@@ -34,7 +34,6 @@ public class RatingGUI implements InventoryHolder {
 
         ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.rating");
 
-        // Title always comes from messages.yml
         String title = plugin.getConfigManager().getMessage("gui.titles.rating");
         int size = cfg != null ? cfg.getInt("size", 27) : 27;
 
@@ -50,13 +49,11 @@ public class RatingGUI implements InventoryHolder {
         ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.rating");
         int size = inventory.getSize();
 
-        // Fill background
         ItemStack filler = ItemResolver.resolveAppearance(
                 cfg != null ? cfg.getConfigurationSection("filler-item") : null,
                 Material.GRAY_STAINED_GLASS_PANE);
         for (int i = 0; i < size; i++) inventory.setItem(i, filler);
 
-        // Star buttons (1–5)
         int[] starSlots = DEFAULT_STAR_SLOTS;
         if (cfg != null) {
             List<?> raw = cfg.getList("star-slots");
@@ -69,11 +66,9 @@ public class RatingGUI implements InventoryHolder {
             inventory.setItem(starSlots[i], buildStarItem(plugin, cfg, stars, session.getStars() >= stars));
         }
 
-        // Trap-report toggle
         int trapSlot = cfg != null ? cfg.getInt("trap-report-slot", DEFAULT_TRAP_SLOT) : DEFAULT_TRAP_SLOT;
         inventory.setItem(trapSlot, buildTrapItem(plugin, cfg, session.isTrapReport()));
 
-        // Confirm button
         int confirmSlot = cfg != null ? cfg.getInt("confirm-slot", DEFAULT_CONFIRM_SLOT) : DEFAULT_CONFIRM_SLOT;
         inventory.setItem(confirmSlot, buildConfirmItem(plugin, cfg, session.isReady()));
     }

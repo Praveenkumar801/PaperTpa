@@ -37,7 +37,6 @@ public class StatsGUI implements InventoryHolder {
 
         ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.player-info");
 
-        // Title always comes from messages.yml
         String title = plugin.getConfigManager()
                 .getMessage("gui.titles.stats", Map.of("player", targetName));
         int size = cfg != null ? cfg.getInt("size", 27) : 27;
@@ -46,13 +45,11 @@ public class StatsGUI implements InventoryHolder {
                 net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
                         .legacyAmpersand().deserialize(title));
 
-        // Fill background
         ItemStack filler = ItemResolver.resolveAppearance(
                 cfg != null ? cfg.getConfigurationSection("filler-item") : null,
                 Material.GRAY_STAINED_GLASS_PANE);
         for (int i = 0; i < size; i++) inventory.setItem(i, filler);
 
-        // Stats head
         int statsSlot = cfg != null ? cfg.getInt("stats-slot", 13) : 13;
         inventory.setItem(statsSlot, buildStatsHead(plugin, targetId, targetName, stats));
     }

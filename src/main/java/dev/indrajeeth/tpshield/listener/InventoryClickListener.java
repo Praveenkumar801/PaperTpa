@@ -22,7 +22,7 @@ import java.util.UUID;
 
 public class InventoryClickListener implements Listener {
 
-    private static final long MS_PER_SECOND = 1000L;
+    private static final long MILLISECONDS_PER_SECOND = 1000L;
 
     private final TpShield plugin;
 
@@ -131,7 +131,7 @@ public class InventoryClickListener implements Listener {
             UUID targetUUID  = session.getTargetUUID();
             int  stars       = session.getStars();
             boolean trap     = session.isTrapReport();
-            long cooldownMs  = (long) plugin.getConfigManager().getRatingCooldown() * MS_PER_SECOND;
+            long cooldownMs  = (long) plugin.getConfigManager().getRatingCooldown() * MILLISECONDS_PER_SECOND;
 
             plugin.getDatabaseManager().getLastRatedTime(raterUUID, targetUUID).thenAccept(lastRated -> {
                 Bukkit.getScheduler().runTask(plugin, () -> {
@@ -141,7 +141,7 @@ public class InventoryClickListener implements Listener {
                     if (cooldownMs > 0 && timeRemaining > 0) {
                         String targetName = Bukkit.getOfflinePlayer(targetUUID).getName();
                         Map<String, String> ph = new HashMap<>();
-                        ph.put("time",   String.valueOf(timeRemaining / MS_PER_SECOND));
+                        ph.put("time",   String.valueOf(timeRemaining / MILLISECONDS_PER_SECOND));
                         ph.put("player", targetName != null ? targetName : targetUUID.toString());
                         MessageUtil.sendMessageWithPlaceholders(player,
                                 plugin.getConfigManager().getPrefix()
