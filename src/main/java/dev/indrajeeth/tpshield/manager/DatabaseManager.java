@@ -81,6 +81,14 @@ public class DatabaseManager {
                     total_trap_reports INTEGER NOT NULL DEFAULT 0
                 )
                 """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS rating_cooldowns (
+                    rater_uuid  TEXT    NOT NULL,
+                    target_uuid TEXT    NOT NULL,
+                    last_rated  INTEGER NOT NULL DEFAULT 0,
+                    PRIMARY KEY (rater_uuid, target_uuid)
+                )
+                """);
         }
     }
 
@@ -150,6 +158,36 @@ public class DatabaseManager {
                 ps.executeUpdate();
             } catch (SQLException e) {
                 plugin.getLogger().log(Level.WARNING, "Failed to save rating", e);
+            }
+        });
+    }
+
+    public CompletableFuture<Long> getLastRatedTime(UUID raterUuid, UUID targetUuid) {
+        return supplyAsync(() -> {
+            String sql = "SELECT last_rated FROM rating_cooldowns WHERE rater_uuid=? AND target_uuid=?";
+            try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+                ps.setString(1, raterUuid.toString());
+                ps.setString(2, targetUuid.toString());
+                ResultSet rs = ps.executeQuery();
+                if (rs.next()) return rs.getLong("last_rated");
+            } catch (SQLException e) {
+                plugin.getLogger().log(Level.WARNING, "Failed to read rating cooldown", e);
+            }
+            return 0L;
+        });
+    }
+
+    public CompletableFuture<Void> recordRatingTime(UUID raterUuid, UUID targetUuid, long timestamp) {
+        return runAsync(() -> {
+            String sql = "INSERT INTO rating_cooldowns (rater_uuid, target_uuid, last_rated) VALUES (?,?,?) "
+                       + "ON CONFLICT(rater_uuid, target_uuid) DO UPDATE SET last_rated=excluded.last_rated";
+            try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+                ps.setString(1, raterUuid.toString());
+                ps.setString(2, targetUuid.toString());
+                ps.setLong(3, timestamp);
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                plugin.getLogger().log(Level.WARNING, "Failed to record rating time", e);
             }
         });
     }

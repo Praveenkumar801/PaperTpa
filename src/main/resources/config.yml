@@ -25,6 +25,8 @@ settings:
   teleport-delay: 5
   # Seconds after landing before the post-teleport rating GUI appears.
   rating-delay: 30
+  # Seconds a player must wait before rating the same player again (0 = no limit).
+  rating-cooldown: 3600
   # Whether to play sounds on teleport events.
   enable-sounds: true
   # Seconds of post-teleport immunity from entity damage (0 = disabled).

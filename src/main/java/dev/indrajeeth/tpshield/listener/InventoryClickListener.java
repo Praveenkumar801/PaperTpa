@@ -4,6 +4,7 @@ import dev.indrajeeth.tpshield.TpShield;
 import dev.indrajeeth.tpshield.gui.ConfirmGUI;
 import dev.indrajeeth.tpshield.gui.RatingGUI;
 import dev.indrajeeth.tpshield.gui.SettingsGUI;
+import dev.indrajeeth.tpshield.gui.StatsGUI;
 import dev.indrajeeth.tpshield.model.RatingSession;
 import dev.indrajeeth.tpshield.util.MessageUtil;
 import dev.indrajeeth.tpshield.util.SoundUtil;
@@ -12,6 +13,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.InventoryHolder;
 
 import java.util.HashMap;
@@ -20,10 +22,19 @@ import java.util.UUID;
 
 public class InventoryClickListener implements Listener {
 
+    private static final long MS_PER_SECOND = 1000L;
+
     private final TpShield plugin;
 
     public InventoryClickListener(TpShield plugin) {
         this.plugin = plugin;
+    }
+
+    private static boolean isPluginGUI(InventoryHolder holder) {
+        return holder instanceof ConfirmGUI
+                || holder instanceof RatingGUI
+                || holder instanceof SettingsGUI
+                || holder instanceof StatsGUI;
     }
 
     @EventHandler
@@ -42,7 +53,18 @@ public class InventoryClickListener implements Listener {
         } else if (holder instanceof SettingsGUI gui) {
             event.setCancelled(true);
             handleSettingsClick(player, gui, event.getRawSlot());
-        } else if (holder instanceof dev.indrajeeth.tpshield.gui.StatsGUI) {
+        } else if (holder instanceof StatsGUI) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (!(event.getWhoClicked() instanceof Player)) return;
+        InventoryHolder holder = event.getView().getTopInventory().getHolder();
+        if (!isPluginGUI(holder)) return;
+        int topSize = event.getView().getTopInventory().getSize();
+        if (event.getRawSlots().stream().anyMatch(s -> s < topSize)) {
             event.setCancelled(true);
         }
     }
@@ -104,20 +126,44 @@ public class InventoryClickListener implements Listener {
 
         if (slot == gui.getConfirmSlot(plugin)) {
             if (!session.isReady()) return;
-            player.closeInventory();
-            plugin.getGUIManager().removeRatingSession(player.getUniqueId());
 
-            plugin.getDatabaseManager().addRating(
-                    session.getTargetUUID(), session.getStars(), session.isTrapReport());
+            UUID raterUUID   = session.getRaterUUID();
+            UUID targetUUID  = session.getTargetUUID();
+            int  stars       = session.getStars();
+            boolean trap     = session.isTrapReport();
+            long cooldownMs  = (long) plugin.getConfigManager().getRatingCooldown() * MS_PER_SECOND;
 
-            Map<String, String> ph = new HashMap<>();
-            ph.put("stars",  String.valueOf(session.getStars()));
-            String targetName = Bukkit.getOfflinePlayer(session.getTargetUUID()).getName();
-            ph.put("player", targetName != null ? targetName : session.getTargetUUID().toString());
-            MessageUtil.sendMessageWithPlaceholders(player,
-                    plugin.getConfigManager().getPrefix()
-                    + plugin.getConfigManager().getMessage("rating.submitted", ph));
-            SoundUtil.play(player, "request-accepted");
+            plugin.getDatabaseManager().getLastRatedTime(raterUUID, targetUUID).thenAccept(lastRated -> {
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (!player.isOnline()) return;
+
+                    long timeRemaining = (lastRated + cooldownMs) - System.currentTimeMillis();
+                    if (cooldownMs > 0 && timeRemaining > 0) {
+                        String targetName = Bukkit.getOfflinePlayer(targetUUID).getName();
+                        Map<String, String> ph = new HashMap<>();
+                        ph.put("time",   String.valueOf(timeRemaining / MS_PER_SECOND));
+                        ph.put("player", targetName != null ? targetName : targetUUID.toString());
+                        MessageUtil.sendMessageWithPlaceholders(player,
+                                plugin.getConfigManager().getPrefix()
+                                + plugin.getConfigManager().getMessage("rating.on-cooldown", ph));
+                    } else {
+                        player.closeInventory();
+                        plugin.getGUIManager().removeRatingSession(player.getUniqueId());
+                        plugin.getDatabaseManager().addRating(targetUUID, stars, trap);
+                        plugin.getDatabaseManager().recordRatingTime(raterUUID, targetUUID,
+                                System.currentTimeMillis());
+
+                        String targetName = Bukkit.getOfflinePlayer(targetUUID).getName();
+                        Map<String, String> ph = new HashMap<>();
+                        ph.put("stars",  String.valueOf(stars));
+                        ph.put("player", targetName != null ? targetName : targetUUID.toString());
+                        MessageUtil.sendMessageWithPlaceholders(player,
+                                plugin.getConfigManager().getPrefix()
+                                + plugin.getConfigManager().getMessage("rating.submitted", ph));
+                        SoundUtil.play(player, "request-accepted");
+                    }
+                });
+            });
         }
     }
 

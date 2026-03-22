@@ -107,6 +107,10 @@ public class ConfigManager {
         return config.getInt("settings.rating-delay", 30);
     }
 
+    public int getRatingCooldown() {
+        return config.getInt("settings.rating-cooldown", 3600);
+    }
+
     public boolean areSoundsEnabled() {
         return config.getBoolean("settings.enable-sounds", true);
     }

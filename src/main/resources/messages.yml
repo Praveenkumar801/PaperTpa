@@ -156,6 +156,7 @@ rating:
   rate-button: "&e[Rate]"
   click-to-rate-hover: "&eClick to open the rating GUI"
   submitted: "&aYou rated &e%player% &a%stars% star(s). Thank you!"
+  on-cooldown: "&cYou must wait &e%time%s &cbefore rating &e%player% &cagain."
   expired: "&cYour rating session has expired."
 
 # ══════════════════════════════════════════════════════════════
