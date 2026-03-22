@@ -37,12 +37,12 @@ settings:
     enabled: false
     # Seconds the player must remain still before the teleport executes.
     time: 5
-  # Block TP commands while a player is in combat.
-  combat-tag:
-    # Set true to enable the combat-tag system.
+  # Block TP commands when a player is flagged as in combat.
+  # An external plugin (e.g. a Skript) signals combat status by granting or
+  # revoking the tpshield.incombat permission node.
+  combat:
+    # Set true to enable the combat check on all TP commands.
     enabled: true
-    # Seconds a player stays tagged after giving or receiving PvP damage.
-    duration: 15
 
 # ─────────────────────────────────────────────
 #  Notification sounds

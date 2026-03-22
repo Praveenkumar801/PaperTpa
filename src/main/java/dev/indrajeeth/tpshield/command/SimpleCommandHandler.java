@@ -13,7 +13,6 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 public class SimpleCommandHandler implements CommandExecutor, TabCompleter {
@@ -49,18 +48,17 @@ public class SimpleCommandHandler implements CommandExecutor, TabCompleter {
     }
 
     /**
-     * Returns {@code false} and notifies the player when the combat-tag system is
-     * enabled, the player is currently in combat, and they do not hold the
-     * {@code tpshield.combat.bypass} permission.
+     * Returns {@code false} and notifies the player when the combat check is
+     * enabled, the player holds the {@code tpshield.incombat} permission (set by
+     * an external combat plugin/script), and they do not hold
+     * {@code tpshield.combat.bypass}.
      */
     protected boolean checkNotInCombat(Player player) {
-        if (!configManager.isCombatTagEnabled()) return true;
+        if (!configManager.isCombatEnabled()) return true;
         if (PermissionManager.hasPermission(player, "tpshield.combat.bypass")) return true;
-        if (!plugin.getCombatManager().isInCombat(player.getUniqueId())) return true;
-        long remaining = plugin.getCombatManager().getRemainingSeconds(player.getUniqueId());
-        Map<String, String> ph = Map.of("time", String.valueOf(remaining));
+        if (!PermissionManager.hasPermission(player, "tpshield.incombat")) return true;
         MessageUtil.sendMessageWithPlaceholders(player,
-                configManager.getPrefix() + configManager.getMessage("combat.blocked", ph));
+                configManager.getPrefix() + configManager.getMessage("combat.blocked"));
         return false;
     }
 

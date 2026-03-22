@@ -114,8 +114,11 @@ permissions:
   tpshield.immunity.bypass:
     description: This player's attacks can still hit post-teleport immune players
     default: op
+  tpshield.incombat:
+    description: Marks this player as currently in combat — grant/revoke via your combat Skript to block TP commands
+    default: false
   tpshield.combat.bypass:
-    description: Bypass the combat-tag block and use teleport commands while in combat
+    description: Bypass the combat block and use teleport commands even while tpshield.incombat is set
     default: op
   tpshield.*:
     description: All TpShield permissions
@@ -132,4 +135,5 @@ permissions:
       tpshield.delay.bypass: true
       tpshield.stats.others: true
       tpshield.immunity.bypass: true
+      tpshield.incombat: false
       tpshield.combat.bypass: true
