@@ -10,10 +10,9 @@ import java.util.List;
 
 /**
  * /tpconfirm
- * Used by the original TPA sender to confirm they want to proceed with the
- * teleport after the target has accepted.  The teleport will not fire until
- * the sender explicitly runs this command (or clicks the "[Accept TP]" button
- * in the confirmation message).
+ * Allows the TPA sender to confirm the teleport via a text command
+ * after the target has accepted. The teleport can also be confirmed
+ * by clicking the Accept TP button in the ConfirmGUI (/tpaview).
  */
 public class TPConfirmCommand extends SimpleCommandHandler {
 

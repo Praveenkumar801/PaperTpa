@@ -111,10 +111,6 @@ public class ConfigManager {
         return config.getBoolean("settings.enable-sounds", true);
     }
 
-    public boolean captureLocationOnAccept() {
-        return config.getBoolean("settings.capture-location-on-accept", true);
-    }
-
     public int getTpImmunity() {
         return config.getInt("settings.tp-immunity", 0);
     }

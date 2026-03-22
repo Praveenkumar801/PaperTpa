@@ -65,14 +65,12 @@ public class TPAcceptCommand extends SimpleCommandHandler {
             Bukkit.getScheduler().runTask(plugin, () -> {
                 Player requester = Bukkit.getPlayer(requesterId);
                 if (result && requester != null && requester.isOnline()) {
-                    // Tell the accepter that they accepted and the sender will confirm
                     Map<String, String> placeholders = new HashMap<>();
                     placeholders.put("player", requester.getName());
                     MessageUtil.sendMessageWithPlaceholders(accepter,
                             configManager.getPrefix() + configManager.getMessage("requests.accepted-target", placeholders));
                     SoundUtil.play(accepter, "request-accepted");
 
-                    // Send the requester a confirmation message with view + accept-TP buttons
                     requestManager.sendRequesterAcceptConfirmation(requester, accepter);
                 } else {
                     MessageUtil.sendMessageWithPlaceholders(accepter,

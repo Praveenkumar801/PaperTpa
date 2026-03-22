@@ -27,8 +27,6 @@ settings:
   rating-delay: 30
   # Whether to play sounds on teleport events.
   enable-sounds: true
-  # Freeze destination location at the moment the request is accepted.
-  capture-location-on-accept: true
   # Seconds of post-teleport immunity from entity damage (0 = disabled).
   tp-immunity: 30
   # Require the teleporting player to stand still before the TP fires.
@@ -147,7 +145,29 @@ gui:
     accept-item:
       material: LIME_STAINED_GLASS_PANE
       custom-model-data: 0
-      # Example: itemsadder: "tpshield:accept_button"
+      itemsadder: ""
+    deny-item:
+      material: RED_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+    filler-item:
+      material: GRAY_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+
+  # ── Confirm GUI (shown to the TPA sender after target accepts) ──
+  confirm:
+    size: 27
+    requester-slot: 4   # Player head of the accepter
+    accept-slot: 11     # Accept TP button
+    deny-slot: 15       # Cancel button
+    requester-item:
+      material: PLAYER_HEAD
+      custom-model-data: 0
+      itemsadder: ""
+    accept-item:
+      material: LIME_STAINED_GLASS_PANE
+      custom-model-data: 0
       itemsadder: ""
     deny-item:
       material: RED_STAINED_GLASS_PANE

@@ -7,7 +7,6 @@ import dev.indrajeeth.tpshield.util.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -22,10 +21,8 @@ import java.util.UUID;
 
 /**
  * GUI shown to the TPA sender after the target has accepted their request.
- * Displays the accepter's (target's) player head with their current coords,
- * dimension, trap % and rating in the lore, plus "Accept TP" / "Cancel" buttons.
- *
- * The sender clicks Accept to proceed with the teleport, or Cancel to abort.
+ * Displays the accepter's player head with their location, trap % and rating,
+ * plus Accept TP and Cancel buttons.
  */
 public class ConfirmGUI implements InventoryHolder {
 
@@ -38,8 +35,8 @@ public class ConfirmGUI implements InventoryHolder {
         this.requesterId = requester.getUniqueId();
         this.accepterId  = accepterId;
 
-        // Reuse the same layout config as the request GUI (identical slot positions)
-        ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.request");
+        ConfigurationSection cfg = plugin.getConfigManager().getGuiSection("gui.confirm");
+        if (cfg == null) cfg = plugin.getConfigManager().getGuiSection("gui.request");
 
         String title = plugin.getConfigManager().getMessage("gui.titles.confirm");
         int size = cfg != null ? cfg.getInt("size", 27) : 27;
@@ -48,18 +45,15 @@ public class ConfirmGUI implements InventoryHolder {
                 net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
                         .legacyAmpersand().deserialize(title));
 
-        // Fill background
         ItemStack filler = ItemResolver.resolveAppearance(
                 cfg != null ? cfg.getConfigurationSection("filler-item") : null,
                 Material.GRAY_STAINED_GLASS_PANE);
         for (int i = 0; i < size; i++) inventory.setItem(i, filler);
 
-        // Accepter head in the centre slot
         int headSlot = cfg != null ? cfg.getInt("requester-slot", 4) : 4;
         inventory.setItem(headSlot,
                 buildAccepterHead(plugin, accepterId, accepterLocation, accepterStats));
 
-        // Accept TP button
         int acceptSlot = cfg != null ? cfg.getInt("accept-slot", 11) : 11;
         ItemStack acceptItem = ItemResolver.resolveAppearance(
                 cfg != null ? cfg.getConfigurationSection("accept-item") : null,
@@ -69,7 +63,6 @@ public class ConfirmGUI implements InventoryHolder {
                 List.of(plugin.getConfigManager().getMessage("gui.confirm.accept-lore")));
         inventory.setItem(acceptSlot, acceptItem);
 
-        // Cancel button
         int cancelSlot = cfg != null ? cfg.getInt("deny-slot", 15) : 15;
         ItemStack cancelItem = ItemResolver.resolveAppearance(
                 cfg != null ? cfg.getConfigurationSection("deny-item") : null,
@@ -102,7 +95,7 @@ public class ConfirmGUI implements InventoryHolder {
                 plugin.getConfigManager().getMessage("gui.confirm.head-name",
                         Map.of("player", name))));
 
-        String dim   = getDimensionName(loc != null ? loc.getWorld() : null);
+        String dim   = MessageUtil.getDimensionName(loc != null ? loc.getWorld() : null);
         int x = loc != null ? (int) loc.getX() : 0;
         int y = loc != null ? (int) loc.getY() : 0;
         int z = loc != null ? (int) loc.getZ() : 0;
@@ -123,15 +116,6 @@ public class ConfirmGUI implements InventoryHolder {
 
         skull.setItemMeta(meta);
         return skull;
-    }
-
-    private static String getDimensionName(World world) {
-        if (world == null) return "Unknown";
-        return switch (world.getEnvironment()) {
-            case NETHER  -> "Nether";
-            case THE_END -> "The End";
-            default      -> world.getName();
-        };
     }
 
     @Override

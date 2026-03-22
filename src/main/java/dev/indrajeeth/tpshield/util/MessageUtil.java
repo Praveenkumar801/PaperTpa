@@ -4,6 +4,7 @@ import dev.indrajeeth.tpshield.TpShield;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -67,5 +68,14 @@ public class MessageUtil {
             message = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(player, message);
         }
         player.sendActionBar(toComponent(message));
+    }
+
+    public static String getDimensionName(World world) {
+        if (world == null) return "Unknown";
+        return switch (world.getEnvironment()) {
+            case NETHER  -> "Nether";
+            case THE_END -> "The End";
+            default      -> world.getName();
+        };
     }
 }

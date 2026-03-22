@@ -118,7 +118,6 @@ public class TeleportRequestManager {
 
         database.incrementStat(accepterId, "total_accepted");
 
-        // Capture destination at accept time so the sender can confirm later
         Location destination = accepter.getLocation().clone();
         acceptedPending.put(requesterId, new AcceptedRequest(accepterId, destination, System.currentTimeMillis()));
 
@@ -138,7 +137,6 @@ public class TeleportRequestManager {
 
         Location dest = accepted.destination();
         if (dest.getWorld() == null || Bukkit.getWorld(dest.getWorld().getUID()) == null) {
-            // Destination world no longer available — fall back to accepter's current location
             Player accepter = Bukkit.getPlayer(accepted.accepterId());
             if (accepter == null) return false;
             dest = accepter.getLocation();
@@ -482,7 +480,6 @@ public class TeleportRequestManager {
             }
             return false;
         });
-        // Also expire accepted-pending requests where the sender has not confirmed in time
         acceptedPending.entrySet().removeIf(e -> {
             if (now - e.getValue().acceptTime() > timeoutMs) {
                 UUID requesterId = e.getKey();
@@ -515,10 +512,8 @@ public class TeleportRequestManager {
             pt.cancelSilently();
         }
 
-        // Clean up accepted-pending where this player was the sender (requester)
         acceptedPending.remove(playerId);
 
-        // Clean up accepted-pending where this player was the accepter
         acceptedPending.entrySet().removeIf(e -> {
             if (e.getValue().accepterId().equals(playerId)) {
                 UUID senderId = e.getKey();
@@ -572,15 +567,6 @@ public class TeleportRequestManager {
 
     void cleanupRequesterTarget(UUID playerId) {
         requesterToTarget.remove(playerId);
-    }
-
-    private static String getDimensionName(World world) {
-        if (world == null) return "Unknown";
-        return switch (world.getEnvironment()) {
-            case NETHER  -> "Nether";
-            case THE_END -> "The End";
-            default      -> world.getName();
-        };
     }
 
     public static class PendingTeleport {

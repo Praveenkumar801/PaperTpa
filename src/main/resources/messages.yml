@@ -38,8 +38,6 @@ commands:
   tpa:
     usage: "&cUsage: /tpa <player>"
     cannot-teleport-self: "&cYou cannot send a teleport request to yourself."
-  tpaview:
-    usage: "&cUsage: /tpaview <player>"
 
 # ─────────────────────────────────────────────
 #  TPA request lifecycle
@@ -53,7 +51,6 @@ requests:
   expired-target: "&cThe teleport request has expired!"
   no-pending-request: "&cYou don't have any pending teleport requests!"
   no-pending-requests: "&cYou have no pending teleport requests."
-  accepted: "&aYour teleport request has been accepted!"
   accepted-target: "&aYou accepted &e%player%&a's teleport request."
   accepted-awaiting-confirm: "&e%player% &aaccepted your teleport request!"
   no-accepted-request: "&cYou have no pending teleport confirmation. Ask the target to accept first."
