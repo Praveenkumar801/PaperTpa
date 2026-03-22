@@ -1,6 +1,7 @@
 package dev.indrajeeth.tpshield.command;
 
 import dev.indrajeeth.tpshield.TpShield;
+import dev.indrajeeth.tpshield.manager.TeleportRequestManager;
 import dev.indrajeeth.tpshield.util.MessageUtil;
 import dev.indrajeeth.tpshield.util.SoundUtil;
 import org.bukkit.Bukkit;
