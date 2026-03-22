@@ -150,45 +150,25 @@ public class TeleportRequestManager {
     }
 
     /**
-     * Sends the sender a clickable confirmation message after the target has accepted,
-     * including the target's location and buttons to view stats or confirm the teleport.
+     * Sends the sender a simple notification that their request was accepted,
+     * plus a clickable "[View]" button to open the ConfirmGUI.
      * Must be called on the main thread.
      */
     public void sendRequesterAcceptConfirmation(Player requester, Player accepter) {
-        AcceptedRequest accepted = acceptedPending.get(requester.getUniqueId());
-        Location dest = accepted != null ? accepted.destination() : accepter.getLocation();
-
-        String dim = getDimensionName(dest.getWorld());
-        int x = (int) dest.getX(), y = (int) dest.getY(), z = (int) dest.getZ();
-
         ConfigManager cfg = plugin.getConfigManager();
 
-        Component confirmMsg = MessageUtil.toComponent(
+        Component msg = MessageUtil.toComponent(
                 cfg.getPrefix() + cfg.getMessage("requests.accepted-awaiting-confirm",
                         Map.of("player", accepter.getName())));
-        Component locationLine = MessageUtil.toComponent(
-                cfg.getMessage("requests.accepted-location",
-                        Map.of("x", String.valueOf(x), "y", String.valueOf(y),
-                               "z", String.valueOf(z), "dimension", dim)));
-        Component viewButton = MessageUtil.toComponent(cfg.getMessage("ui.button.view-stats"))
+        Component viewButton = MessageUtil.toComponent(cfg.getMessage("ui.button.view"))
                 .clickEvent(ClickEvent.runCommand("/tpaview"))
                 .hoverEvent(HoverEvent.showText(
-                        MessageUtil.toComponent(cfg.getMessage("ui.hover.view-stats",
-                                Map.of("player", accepter.getName())))));
-        Component acceptButton = MessageUtil.toComponent(cfg.getMessage("ui.button.accept-tp"))
-                .clickEvent(ClickEvent.runCommand("/tpconfirm"))
-                .hoverEvent(HoverEvent.showText(
-                        MessageUtil.toComponent(cfg.getMessage("ui.hover.accept-tp",
-                                Map.of("player", accepter.getName())))));
+                        MessageUtil.toComponent(cfg.getMessage("ui.hover.view"))));
 
         requester.sendMessage(Component.text()
-                .append(confirmMsg)
-                .append(Component.newline())
-                .append(locationLine)
-                .append(Component.newline())
-                .append(viewButton)
+                .append(msg)
                 .append(Component.text(" "))
-                .append(acceptButton)
+                .append(viewButton)
                 .build());
         SoundUtil.play(requester, "request-accepted");
     }
@@ -197,6 +177,21 @@ public class TeleportRequestManager {
     public UUID getAcceptedRequestTarget(UUID requesterId) {
         AcceptedRequest accepted = acceptedPending.get(requesterId);
         return accepted != null ? accepted.accepterId() : null;
+    }
+
+    /** Returns the captured destination for a sender who has an accepted-pending request, or null. */
+    public Location getAcceptedDestination(UUID requesterId) {
+        AcceptedRequest accepted = acceptedPending.get(requesterId);
+        return accepted != null ? accepted.destination() : null;
+    }
+
+    /**
+     * Cancels an accepted-but-unconfirmed request (sender chose not to proceed).
+     *
+     * @return true if a pending accepted request was found and removed
+     */
+    public boolean cancelAcceptedRequest(UUID requesterId) {
+        return acceptedPending.remove(requesterId) != null;
     }
 
     public CompletableFuture<Boolean> denyRequest(Player denier, UUID requesterId) {

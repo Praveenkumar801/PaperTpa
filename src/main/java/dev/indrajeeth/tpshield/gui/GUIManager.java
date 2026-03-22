@@ -4,6 +4,7 @@ import dev.indrajeeth.tpshield.TpShield;
 import dev.indrajeeth.tpshield.model.RatingSession;
 import dev.indrajeeth.tpshield.model.TPARequest;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
 import java.util.Map;
@@ -38,6 +39,32 @@ public class GUIManager {
                 if (viewer.isOnline()) {
                     RequestGUI gui = new RequestGUI(plugin, viewer, requesterId, request, stats);
                     viewer.openInventory(gui.getInventory());
+                }
+            })
+        );
+    }
+
+    /**
+     * Opens the confirmation GUI for the TPA sender after the target has accepted.
+     * Shows the accepter's head with their captured location, stats, and
+     * Accept TP / Cancel buttons. Must be called on the main thread.
+     */
+    public void openConfirmGUI(Player requester) {
+        UUID requesterId = requester.getUniqueId();
+        UUID accepterId  = plugin.getTeleportManager().getAcceptedRequestTarget(requesterId);
+        Location dest    = plugin.getTeleportManager().getAcceptedDestination(requesterId);
+
+        if (accepterId == null || dest == null) {
+            requester.sendMessage(plugin.getConfigManager().getPrefix()
+                    + plugin.getConfigManager().getMessage("requests.no-accepted-request"));
+            return;
+        }
+
+        plugin.getDatabaseManager().getPlayerStats(accepterId).thenAccept(stats ->
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (requester.isOnline()) {
+                    ConfirmGUI gui = new ConfirmGUI(plugin, requester, accepterId, dest, stats);
+                    requester.openInventory(gui.getInventory());
                 }
             })
         );

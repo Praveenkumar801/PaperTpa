@@ -7,13 +7,12 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * /tpaview
- * Opens the stats GUI for the player who accepted the sender's TPA request.
- * Intended for use by the requester after the target has accepted — gives a
- * chance to review the accepter's reputation before confirming with /tpconfirm.
+ * Opens the ConfirmGUI for the sender after the target has accepted their request.
+ * Shows the accepter's head with their location, stats, trap % and rating,
+ * plus Accept TP and Cancel buttons.
  */
 public class TPAViewCommand extends SimpleCommandHandler {
 
@@ -29,14 +28,7 @@ public class TPAViewCommand extends SimpleCommandHandler {
         }
         if (!checkPermission(player, "tpshield.tpa")) return true;
 
-        UUID accepterId = requestManager.getAcceptedRequestTarget(player.getUniqueId());
-        if (accepterId == null) {
-            MessageUtil.sendMessageWithPlaceholders(player,
-                    configManager.getPrefix() + configManager.getMessage("requests.no-accepted-request"));
-            return true;
-        }
-
-        plugin.getGUIManager().openStatsGUI(player, accepterId);
+        plugin.getGUIManager().openConfirmGUI(player);
         return true;
     }
 
