@@ -107,12 +107,12 @@ public class ConfigManager {
         return config.getInt("settings.rating-delay", 30);
     }
 
-    public boolean areSoundsEnabled() {
-        return config.getBoolean("settings.enable-sounds", true);
+    public int getRatingCooldown() {
+        return config.getInt("settings.rating-cooldown", 3600);
     }
 
-    public boolean captureLocationOnAccept() {
-        return config.getBoolean("settings.capture-location-on-accept", true);
+    public boolean areSoundsEnabled() {
+        return config.getBoolean("settings.enable-sounds", true);
     }
 
     public int getTpImmunity() {
@@ -125,6 +125,11 @@ public class ConfigManager {
 
     public int getTpIdleTime() {
         return config.getInt("settings.tp-idle.time", 5);
+    }
+
+    /** Returns {@code true} when the combat check on TP commands is enabled in config. */
+    public boolean isCombatEnabled() {
+        return config.getBoolean("settings.combat.enabled", true);
     }
 
     /**

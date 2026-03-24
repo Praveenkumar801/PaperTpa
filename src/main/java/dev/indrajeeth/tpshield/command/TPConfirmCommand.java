@@ -9,14 +9,14 @@ import org.bukkit.entity.Player;
 import java.util.List;
 
 /**
- * /tpaview
- * Opens the ConfirmGUI for the sender after the target has accepted their request.
- * Shows the accepter's head with their location, stats, trap % and rating,
- * plus Accept TP and Cancel buttons.
+ * /tpconfirm
+ * Allows the TPA sender to confirm the teleport via a text command
+ * after the target has accepted. The teleport can also be confirmed
+ * by clicking the Accept TP button in the ConfirmGUI (/tpaview).
  */
-public class TPAViewCommand extends SimpleCommandHandler {
+public class TPConfirmCommand extends SimpleCommandHandler {
 
-    public TPAViewCommand(TpShield plugin) {
+    public TPConfirmCommand(TpShield plugin) {
         super(plugin);
     }
 
@@ -27,8 +27,13 @@ public class TPAViewCommand extends SimpleCommandHandler {
             return true;
         }
         if (!checkPermission(player, "tpshield.tpa")) return true;
+        if (!checkNotInCombat(player)) return true;
 
-        plugin.getGUIManager().openConfirmGUI(player);
+        boolean confirmed = requestManager.confirmTeleport(player);
+        if (!confirmed) {
+            MessageUtil.sendMessageWithPlaceholders(player,
+                    configManager.getPrefix() + configManager.getMessage("requests.no-accepted-request"));
+        }
         return true;
     }
 

@@ -25,10 +25,10 @@ settings:
   teleport-delay: 5
   # Seconds after landing before the post-teleport rating GUI appears.
   rating-delay: 30
+  # Seconds a player must wait before rating the same player again (0 = no limit).
+  rating-cooldown: 3600
   # Whether to play sounds on teleport events.
   enable-sounds: true
-  # Freeze destination location at the moment the request is accepted.
-  capture-location-on-accept: true
   # Seconds of post-teleport immunity from entity damage (0 = disabled).
   tp-immunity: 30
   # Require the teleporting player to stand still before the TP fires.
@@ -37,6 +37,12 @@ settings:
     enabled: false
     # Seconds the player must remain still before the teleport executes.
     time: 5
+  # Block TP commands when a player is flagged as in combat.
+  # An external plugin (e.g. a Skript) signals combat status by granting or
+  # revoking the tpshield.incombat permission node.
+  combat:
+    # Set true to enable the combat check on all TP commands.
+    enabled: true
 
 # ─────────────────────────────────────────────
 #  Notification sounds
@@ -147,7 +153,29 @@ gui:
     accept-item:
       material: LIME_STAINED_GLASS_PANE
       custom-model-data: 0
-      # Example: itemsadder: "tpshield:accept_button"
+      itemsadder: ""
+    deny-item:
+      material: RED_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+    filler-item:
+      material: GRAY_STAINED_GLASS_PANE
+      custom-model-data: 0
+      itemsadder: ""
+
+  # ── Confirm GUI (shown to the TPA sender after target accepts) ──
+  confirm:
+    size: 27
+    requester-slot: 4   # Player head of the accepter
+    accept-slot: 11     # Accept TP button
+    deny-slot: 15       # Cancel button
+    requester-item:
+      material: PLAYER_HEAD
+      custom-model-data: 0
+      itemsadder: ""
+    accept-item:
+      material: LIME_STAINED_GLASS_PANE
+      custom-model-data: 0
       itemsadder: ""
     deny-item:
       material: RED_STAINED_GLASS_PANE

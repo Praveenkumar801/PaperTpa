@@ -47,6 +47,21 @@ public class SimpleCommandHandler implements CommandExecutor, TabCompleter {
         return false;
     }
 
+    /**
+     * Returns {@code false} and notifies the player when the combat check is
+     * enabled, the player holds the {@code tpshield.incombat} permission (set by
+     * an external combat plugin/script), and they do not hold
+     * {@code tpshield.combat.bypass}.
+     */
+    protected boolean checkNotInCombat(Player player) {
+        if (!configManager.isCombatEnabled()) return true;
+        if (PermissionManager.hasPermission(player, "tpshield.combat.bypass")) return true;
+        if (!PermissionManager.hasPermission(player, "tpshield.incombat")) return true;
+        MessageUtil.sendMessageWithPlaceholders(player,
+                configManager.getPrefix() + configManager.getMessage("combat.blocked"));
+        return false;
+    }
+
     protected List<String> getOnlinePlayerNames(CommandSender sender) {
         UUID senderUuid = sender instanceof Player p ? p.getUniqueId() : null;
         return Bukkit.getOnlinePlayers().stream()

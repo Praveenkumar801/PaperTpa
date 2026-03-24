@@ -1,9 +1,10 @@
 package dev.indrajeeth.tpshield.listener;
 
 import dev.indrajeeth.tpshield.TpShield;
-import dev.indrajeeth.tpshield.gui.SettingsGUI;
+import dev.indrajeeth.tpshield.gui.ConfirmGUI;
 import dev.indrajeeth.tpshield.gui.RatingGUI;
-import dev.indrajeeth.tpshield.gui.RequestGUI;
+import dev.indrajeeth.tpshield.gui.SettingsGUI;
+import dev.indrajeeth.tpshield.gui.StatsGUI;
 import dev.indrajeeth.tpshield.model.RatingSession;
 import dev.indrajeeth.tpshield.util.MessageUtil;
 import dev.indrajeeth.tpshield.util.SoundUtil;
@@ -12,19 +13,28 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.InventoryHolder;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/** Routes inventory-click events for all TpShield GUIs. */
 public class InventoryClickListener implements Listener {
+
+    private static final long MILLISECONDS_PER_SECOND = 1000L;
 
     private final TpShield plugin;
 
     public InventoryClickListener(TpShield plugin) {
         this.plugin = plugin;
+    }
+
+    private static boolean isPluginGUI(InventoryHolder holder) {
+        return holder instanceof ConfirmGUI
+                || holder instanceof RatingGUI
+                || holder instanceof SettingsGUI
+                || holder instanceof StatsGUI;
     }
 
     @EventHandler
@@ -34,76 +44,74 @@ public class InventoryClickListener implements Listener {
 
         InventoryHolder holder = event.getView().getTopInventory().getHolder();
 
-        if (holder instanceof RequestGUI gui) {
+        if (holder instanceof ConfirmGUI gui) {
             event.setCancelled(true);
-            handleRequestClick(player, gui, event.getRawSlot());
+            handleConfirmClick(player, gui, event.getRawSlot());
         } else if (holder instanceof RatingGUI gui) {
             event.setCancelled(true);
             handleRatingClick(player, gui, event.getRawSlot());
         } else if (holder instanceof SettingsGUI gui) {
             event.setCancelled(true);
             handleSettingsClick(player, gui, event.getRawSlot());
-        } else if (holder instanceof dev.indrajeeth.tpshield.gui.StatsGUI) {
+        } else if (holder instanceof StatsGUI) {
             event.setCancelled(true);
         }
     }
 
-    private void handleRequestClick(Player player, RequestGUI gui, int slot) {
-        var cfg = plugin.getConfigManager().getGuiSection("gui.request");
-        int acceptSlot = cfg != null ? cfg.getInt("accept-slot", 11) : 11;
-        int denySlot   = cfg != null ? cfg.getInt("deny-slot",   15) : 15;
+    @EventHandler
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (!(event.getWhoClicked() instanceof Player)) return;
+        InventoryHolder holder = event.getView().getTopInventory().getHolder();
+        if (!isPluginGUI(holder)) return;
+        int topSize = event.getView().getTopInventory().getSize();
+        if (event.getRawSlots().stream().anyMatch(s -> s < topSize)) {
+            event.setCancelled(true);
+        }
+    }
 
-        UUID requesterId = gui.getRequesterId();
+    private void handleConfirmClick(Player player, ConfirmGUI gui, int slot) {
+        if (!gui.getRequesterId().equals(player.getUniqueId())) return;
+
+        var cfg = plugin.getConfigManager().getGuiSection("gui.confirm");
+        if (cfg == null) cfg = plugin.getConfigManager().getGuiSection("gui.request");
+        int acceptSlot = cfg != null ? cfg.getInt("accept-slot", 11) : 11;
+        int cancelSlot = cfg != null ? cfg.getInt("deny-slot",   15) : 15;
 
         if (slot == acceptSlot) {
+            if (plugin.getConfigManager().isCombatEnabled()
+                    && !player.hasPermission("tpshield.combat.bypass")
+                    && player.hasPermission("tpshield.incombat")) {
+                MessageUtil.sendMessageWithPlaceholders(player,
+                        plugin.getConfigManager().getPrefix()
+                        + plugin.getConfigManager().getMessage("combat.blocked"));
+                return;
+            }
             player.closeInventory();
-            plugin.getTeleportManager().acceptRequest(player, requesterId).thenAccept(success ->
-                Bukkit.getScheduler().runTask(plugin, () -> {
-                    Player requester = Bukkit.getPlayer(requesterId);
-                    if (success && requester != null && requester.isOnline()) {
-                        Map<String, String> ph = new HashMap<>();
-                        ph.put("player", player.getName());
-                        MessageUtil.sendMessageWithPlaceholders(requester,
-                                plugin.getConfigManager().getPrefix()
-                                + plugin.getConfigManager().getMessage("requests.accepted", ph));
-                        ph.put("player", requester.getName());
-                        MessageUtil.sendMessageWithPlaceholders(player,
-                                plugin.getConfigManager().getPrefix()
-                                + plugin.getConfigManager().getMessage("requests.accepted-target", ph));
-                        SoundUtil.play(player,    "request-accepted");
-                        SoundUtil.play(requester, "request-accepted");
-                    } else if (!success) {
-                        MessageUtil.sendMessageWithPlaceholders(player,
-                                plugin.getConfigManager().getPrefix()
-                                + plugin.getConfigManager().getMessage("requests.no-pending-request"));
-                    }
-                })
-            );
+            boolean confirmed = plugin.getTeleportManager().confirmTeleport(player);
+            if (!confirmed) {
+                MessageUtil.sendMessageWithPlaceholders(player,
+                        plugin.getConfigManager().getPrefix()
+                        + plugin.getConfigManager().getMessage("requests.no-accepted-request"));
+            }
 
-        } else if (slot == denySlot) {
+        } else if (slot == cancelSlot) {
             player.closeInventory();
-            plugin.getTeleportManager().denyRequest(player, requesterId).thenAccept(success ->
-                Bukkit.getScheduler().runTask(plugin, () -> {
-                    Player requester = Bukkit.getPlayer(requesterId);
-                    if (success && requester != null && requester.isOnline()) {
-                        Map<String, String> ph = new HashMap<>();
-                        ph.put("player", player.getName());
-                        MessageUtil.sendMessageWithPlaceholders(requester,
-                                plugin.getConfigManager().getPrefix()
-                                + plugin.getConfigManager().getMessage("requests.denied", ph));
-                        ph.put("player", requester.getName());
-                        MessageUtil.sendMessageWithPlaceholders(player,
-                                plugin.getConfigManager().getPrefix()
-                                + plugin.getConfigManager().getMessage("requests.denied-target", ph));
-                        SoundUtil.play(player,    "request-denied");
-                        SoundUtil.play(requester, "request-denied");
-                    } else {
-                        MessageUtil.sendMessageWithPlaceholders(player,
-                                plugin.getConfigManager().getPrefix()
-                                + plugin.getConfigManager().getMessage("requests.no-pending-request"));
-                    }
-                })
-            );
+            UUID accepterId = gui.getAccepterId();
+            boolean cancelled = plugin.getTeleportManager().cancelAcceptedRequest(player.getUniqueId());
+            if (cancelled) {
+                Player accepter = Bukkit.getPlayer(accepterId);
+                Map<String, String> ph = new HashMap<>();
+                ph.put("player", player.getName());
+                MessageUtil.sendMessageWithPlaceholders(player,
+                        plugin.getConfigManager().getPrefix()
+                        + plugin.getConfigManager().getMessage("requests.sender-cancelled"));
+                if (accepter != null && accepter.isOnline()) {
+                    MessageUtil.sendMessageWithPlaceholders(accepter,
+                            plugin.getConfigManager().getPrefix()
+                            + plugin.getConfigManager().getMessage("requests.sender-cancelled-target", ph));
+                    SoundUtil.play(accepter, "request-denied");
+                }
+            }
         }
     }
 
@@ -126,20 +134,44 @@ public class InventoryClickListener implements Listener {
 
         if (slot == gui.getConfirmSlot(plugin)) {
             if (!session.isReady()) return;
-            player.closeInventory();
-            plugin.getGUIManager().removeRatingSession(player.getUniqueId());
 
-            plugin.getDatabaseManager().addRating(
-                    session.getTargetUUID(), session.getStars(), session.isTrapReport());
+            UUID raterUUID   = session.getRaterUUID();
+            UUID targetUUID  = session.getTargetUUID();
+            int  stars       = session.getStars();
+            boolean trap     = session.isTrapReport();
+            long cooldownMs  = (long) plugin.getConfigManager().getRatingCooldown() * MILLISECONDS_PER_SECOND;
 
-            Map<String, String> ph = new HashMap<>();
-            ph.put("stars",  String.valueOf(session.getStars()));
-            String targetName = Bukkit.getOfflinePlayer(session.getTargetUUID()).getName();
-            ph.put("player", targetName != null ? targetName : session.getTargetUUID().toString());
-            MessageUtil.sendMessageWithPlaceholders(player,
-                    plugin.getConfigManager().getPrefix()
-                    + plugin.getConfigManager().getMessage("rating.submitted", ph));
-            SoundUtil.play(player, "request-accepted");
+            plugin.getDatabaseManager().getLastRatedTime(raterUUID, targetUUID).thenAccept(lastRated -> {
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (!player.isOnline()) return;
+
+                    long timeRemaining = (lastRated + cooldownMs) - System.currentTimeMillis();
+                    if (cooldownMs > 0 && timeRemaining > 0) {
+                        String targetName = Bukkit.getOfflinePlayer(targetUUID).getName();
+                        Map<String, String> ph = new HashMap<>();
+                        ph.put("time",   String.valueOf(timeRemaining / MILLISECONDS_PER_SECOND));
+                        ph.put("player", targetName != null ? targetName : targetUUID.toString());
+                        MessageUtil.sendMessageWithPlaceholders(player,
+                                plugin.getConfigManager().getPrefix()
+                                + plugin.getConfigManager().getMessage("rating.on-cooldown", ph));
+                    } else {
+                        player.closeInventory();
+                        plugin.getGUIManager().removeRatingSession(player.getUniqueId());
+                        plugin.getDatabaseManager().addRating(targetUUID, stars, trap);
+                        plugin.getDatabaseManager().recordRatingTime(raterUUID, targetUUID,
+                                System.currentTimeMillis());
+
+                        String targetName = Bukkit.getOfflinePlayer(targetUUID).getName();
+                        Map<String, String> ph = new HashMap<>();
+                        ph.put("stars",  String.valueOf(stars));
+                        ph.put("player", targetName != null ? targetName : targetUUID.toString());
+                        MessageUtil.sendMessageWithPlaceholders(player,
+                                plugin.getConfigManager().getPrefix()
+                                + plugin.getConfigManager().getMessage("rating.submitted", ph));
+                        SoundUtil.play(player, "request-accepted");
+                    }
+                });
+            });
         }
     }
 
@@ -198,7 +230,6 @@ public class InventoryClickListener implements Listener {
         }
     }
 
-    /** Fetches fresh stats then refreshes the open SettingsGUI for the player. */
     private void refreshSettingsGUI(TpShield plugin, Player player, SettingsGUI gui) {
         plugin.getDatabaseManager().getPlayerStats(player.getUniqueId()).thenAccept(stats ->
             Bukkit.getScheduler().runTask(plugin, () -> {

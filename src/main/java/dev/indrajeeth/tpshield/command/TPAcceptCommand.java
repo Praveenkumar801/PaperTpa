@@ -1,7 +1,9 @@
 package dev.indrajeeth.tpshield.command;
 
 import dev.indrajeeth.tpshield.TpShield;
+import dev.indrajeeth.tpshield.manager.TeleportRequestManager;
 import dev.indrajeeth.tpshield.util.MessageUtil;
+import dev.indrajeeth.tpshield.util.SoundUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -26,6 +28,7 @@ public class TPAcceptCommand extends SimpleCommandHandler {
 
         Player player = (Player) sender;
         if (!checkPermission(player, "tpshield.tpaccept")) return true;
+        if (!checkNotInCombat(player)) return true;
 
         if (args.length == 0) {
             List<UUID> pending = requestManager.getPendingRequestsFor(player.getUniqueId());
@@ -63,18 +66,32 @@ public class TPAcceptCommand extends SimpleCommandHandler {
         requestManager.acceptRequest(accepter, requesterId).thenAccept(result -> {
             Bukkit.getScheduler().runTask(plugin, () -> {
                 Player requester = Bukkit.getPlayer(requesterId);
-                if (result && requester != null && requester.isOnline()) {
+                if (result == TeleportRequestManager.AcceptResult.NORMAL) {
+                    if (requester != null && requester.isOnline()) {
+                        Map<String, String> placeholders = new HashMap<>();
+                        placeholders.put("player", requester.getName());
+                        MessageUtil.sendMessageWithPlaceholders(accepter,
+                                configManager.getPrefix() + configManager.getMessage("requests.accepted-target", placeholders));
+                        SoundUtil.play(accepter, "request-accepted");
+                        requestManager.sendRequesterAcceptConfirmation(requester, accepter);
+                    } else {
+                        MessageUtil.sendMessageWithPlaceholders(accepter,
+                                configManager.getPrefix() + configManager.getMessage("requests.no-pending-request"));
+                    }
+                } else if (result == TeleportRequestManager.AcceptResult.HERE) {
                     Map<String, String> placeholders = new HashMap<>();
-                    placeholders.put("player", accepter.getName());
-                    MessageUtil.sendMessageWithPlaceholders(requester, configManager.getPrefix() + configManager.getMessage("requests.accepted", placeholders));
-
-                    placeholders.put("player", requester.getName());
-                    MessageUtil.sendMessageWithPlaceholders(accepter, configManager.getPrefix() + configManager.getMessage("requests.accepted-target", placeholders));
-
-                    dev.indrajeeth.tpshield.util.SoundUtil.play(accepter, "request-accepted");
-                    dev.indrajeeth.tpshield.util.SoundUtil.play(requester, "request-accepted");
+                    placeholders.put("player", requester != null ? requester.getName() : "");
+                    MessageUtil.sendMessageWithPlaceholders(accepter,
+                            configManager.getPrefix() + configManager.getMessage("requests.here-accepted-target", placeholders));
+                    SoundUtil.play(accepter, "request-accepted");
+                    if (requester != null && requester.isOnline()) {
+                        placeholders.put("player", accepter.getName());
+                        MessageUtil.sendMessageWithPlaceholders(requester,
+                                configManager.getPrefix() + configManager.getMessage("requests.here-accepted-requester", placeholders));
+                    }
                 } else {
-                    MessageUtil.sendMessageWithPlaceholders(accepter, configManager.getPrefix() + configManager.getMessage("requests.no-pending-request"));
+                    MessageUtil.sendMessageWithPlaceholders(accepter,
+                            configManager.getPrefix() + configManager.getMessage("requests.no-pending-request"));
                 }
             });
         });

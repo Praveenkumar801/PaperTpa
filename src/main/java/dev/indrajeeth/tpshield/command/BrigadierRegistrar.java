@@ -63,6 +63,26 @@ public final class BrigadierRegistrar {
             );
 
             cmds.register(
+                Commands.literal("tpahere")
+                    .then(Commands.argument("player", StringArgumentType.word())
+                        .suggests((ctx, builder) -> {
+                            String prefix = builder.getRemaining().toLowerCase();
+                            Bukkit.getOnlinePlayers().stream()
+                                .map(Player::getName)
+                                .filter(n -> n.toLowerCase().startsWith(prefix))
+                                .forEach(builder::suggest);
+                            return builder.buildFuture();
+                        })
+                        .executes(ctx -> {
+                            delegate(ctx.getSource().getSender(), "tpahere",
+                                new String[]{StringArgumentType.getString(ctx, "player")});
+                            return 1;
+                        }))
+                    .executes(ctx -> { delegate(ctx.getSource().getSender(), "tpahere", new String[0]); return 1; })
+                    .build()
+            );
+
+            cmds.register(
                 Commands.literal("tpcancel")
                     .then(Commands.argument("player", StringArgumentType.word())
                         .suggests((ctx, builder) -> {

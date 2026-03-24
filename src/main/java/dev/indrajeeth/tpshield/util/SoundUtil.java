@@ -58,8 +58,6 @@ public final class SoundUtil {
     }
 
     private static Sound parseSound(String name, String eventKey, TpShield plugin) {
-        // Try registry-based lookup using the Minecraft sound key format
-        // (e.g. "entity.experience_orb.pickup" or "minecraft:entity.experience_orb.pickup")
         NamespacedKey key = NamespacedKey.fromString(name.toLowerCase(Locale.ROOT));
         if (key != null) {
             Sound sound = Registry.SOUNDS.get(key);

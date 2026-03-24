@@ -53,7 +53,6 @@ public final class PermissionManager {
                     }
                 }
             } catch (Exception e) {
-                // fall through to Bukkit
             }
         }
         return player.hasPermission(permission);

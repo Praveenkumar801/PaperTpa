@@ -34,6 +34,16 @@ public class TeleportRequestManager {
     private final Map<UUID, Long> immunePlayers = new ConcurrentHashMap<>();
     private final Set<UUID> pendingRatingScheduled = ConcurrentHashMap.newKeySet();
 
+    /**
+     * Holds requests that have been accepted by the target but are awaiting
+     * confirmation from the sender before the teleport fires.
+     * Key: requesterId (sender), Value: AcceptedRequest data (accepter + destination)
+     */
+    private final Map<UUID, AcceptedRequest> acceptedPending = new ConcurrentHashMap<>();
+
+    /** Immutable snapshot of an accepted request awaiting sender confirmation. */
+    private record AcceptedRequest(UUID accepterId, Location destination, long acceptTime) {}
+
     /** Extra grace period to retain expired cooldown entries before purging. */
     private static final long COOLDOWN_GRACE_PERIOD_MS = 60_000L;
 
@@ -70,7 +80,7 @@ public class TeleportRequestManager {
             }
 
             long now = System.currentTimeMillis();
-            TPARequest request = new TPARequest(requesterId, targetId, now, requesterLoc);
+            TPARequest request = new TPARequest(requesterId, targetId, now, requesterLoc, false);
             activeRequests.put(requesterId, request);
             cooldowns.put(requesterId, now);
             database.updateLastRequestTime(requesterId, now);
@@ -90,52 +100,153 @@ public class TeleportRequestManager {
         REQUESTS_DISABLED
     }
 
-    public CompletableFuture<Boolean> acceptRequest(Player accepter, UUID requesterId) {
+    /** Result returned by {@link #acceptRequest}. */
+    public enum AcceptResult {
+        /** Normal TPA accept — requester still needs to confirm via GUI or /tpconfirm. */
+        NORMAL,
+        /** tpahere accept — target has been teleported to the requester immediately. */
+        HERE,
+        /** No matching pending request was found. */
+        FAILED
+    }
+
+    /**
+     * Sends a /tpahere request: requester asks the target to teleport to them.
+     * Must be called on the main thread.
+     */
+    public CompletableFuture<RequestResult> sendHereRequest(Player requester, Player target) {
+        UUID requesterId = requester.getUniqueId();
+        UUID targetId    = target.getUniqueId();
+
+        TPARequest existing = activeRequests.get(requesterId);
+        if (existing != null && existing.getTargetId().equals(targetId)) {
+            return CompletableFuture.completedFuture(RequestResult.ALREADY_HAS_REQUEST);
+        }
+
+        if (!requester.hasPermission("tpshield.cooldown.bypass")) {
+            long last = cooldowns.getOrDefault(requesterId, 0L);
+            long cooldownMs = plugin.getConfigManager().getCooldown() * 1000L;
+            if (System.currentTimeMillis() - last < cooldownMs) {
+                return CompletableFuture.completedFuture(RequestResult.ON_COOLDOWN);
+            }
+        }
+
+        Location requesterLoc = requester.getLocation().clone();
+
+        return database.areRequestsEnabled(targetId).thenCompose(enabled -> {
+            if (!enabled && !requester.hasPermission("tpshield.bypass")) {
+                return CompletableFuture.completedFuture(RequestResult.REQUESTS_DISABLED);
+            }
+
+            long now = System.currentTimeMillis();
+            TPARequest request = new TPARequest(requesterId, targetId, now, requesterLoc, true);
+            activeRequests.put(requesterId, request);
+            cooldowns.put(requesterId, now);
+            database.updateLastRequestTime(requesterId, now);
+            database.incrementStat(requesterId, "total_sent");
+            database.incrementStat(targetId,    "total_received");
+
+            return database.isAutoAcceptEnabled(targetId)
+                .thenApply(autoAccept -> autoAccept ? RequestResult.AUTO_ACCEPTED : RequestResult.SUCCESS);
+        });
+    }
+
+    public CompletableFuture<AcceptResult> acceptRequest(Player accepter, UUID requesterId) {
         UUID accepterId = accepter.getUniqueId();
         TPARequest request = activeRequests.get(requesterId);
         if (request == null || !request.getTargetId().equals(accepterId)) {
-            return CompletableFuture.completedFuture(false);
+            return CompletableFuture.completedFuture(AcceptResult.FAILED);
         }
 
         if (!activeRequests.remove(requesterId, request)) {
-            return CompletableFuture.completedFuture(false);
+            return CompletableFuture.completedFuture(AcceptResult.FAILED);
         }
 
         Player requester = Bukkit.getPlayer(requesterId);
         if (requester == null) {
-            return CompletableFuture.completedFuture(false);
+            return CompletableFuture.completedFuture(AcceptResult.FAILED);
         }
 
         database.incrementStat(accepterId, "total_accepted");
 
-        requesterToTarget.put(requesterId, accepterId);
+        if (request.isReverse()) {
+            Location destination = requester.getLocation().clone();
+            requesterToTarget.put(accepterId, requesterId);
+            teleportPlayer(accepter, destination);
+            return CompletableFuture.completedFuture(AcceptResult.HERE);
+        }
 
-        final boolean captureLocation = plugin.getConfigManager().captureLocationOnAccept();
-        final Location captured       = captureLocation ? accepter.getLocation().clone() : null;
+        Location destination = accepter.getLocation().clone();
+        acceptedPending.put(requesterId, new AcceptedRequest(accepterId, destination, System.currentTimeMillis()));
+        return CompletableFuture.completedFuture(AcceptResult.NORMAL);
+    }
 
-        Bukkit.getScheduler().runTask(plugin, () -> {
-            Player req = Bukkit.getPlayer(requesterId);
-            Player acc = Bukkit.getPlayer(accepterId);
-            if (req == null) {
-                requesterToTarget.remove(requesterId);
-                return;
-            }
+    /**
+     * Called when the original sender confirms they want to proceed with the teleport
+     * after the target has accepted. Must be called on the main thread.
+     *
+     * @return true if the confirmation was valid and teleport was initiated, false otherwise
+     */
+    public boolean confirmTeleport(Player requester) {
+        UUID requesterId = requester.getUniqueId();
+        AcceptedRequest accepted = acceptedPending.remove(requesterId);
+        if (accepted == null) return false;
 
-            Location dest;
-            if (captureLocation && captured != null
-                    && captured.getWorld() != null
-                    && Bukkit.getWorld(captured.getWorld().getUID()) != null) {
-                dest = captured;
-            } else if (acc != null) {
-                dest = acc.getLocation();
-            } else {
-                requesterToTarget.remove(requesterId);
-                return;
-            }
-            teleportPlayer(req, dest);
-        });
+        Location dest = accepted.destination();
+        if (dest.getWorld() == null || Bukkit.getWorld(dest.getWorld().getUID()) == null) {
+            Player accepter = Bukkit.getPlayer(accepted.accepterId());
+            if (accepter == null) return false;
+            dest = accepter.getLocation();
+        }
 
-        return CompletableFuture.completedFuture(true);
+        requesterToTarget.put(requesterId, accepted.accepterId());
+        teleportPlayer(requester, dest);
+        return true;
+    }
+
+    /**
+     * Sends the sender a simple notification that their request was accepted,
+     * plus a clickable "[View]" button to open the ConfirmGUI.
+     * Must be called on the main thread.
+     */
+    public void sendRequesterAcceptConfirmation(Player requester, Player accepter) {
+        ConfigManager cfg = plugin.getConfigManager();
+
+        Component msg = MessageUtil.toComponent(
+                cfg.getPrefix() + cfg.getMessage("requests.accepted-awaiting-confirm",
+                        Map.of("player", accepter.getName())));
+        Component viewButton = MessageUtil.toComponent(cfg.getMessage("ui.button.view"))
+                .clickEvent(ClickEvent.runCommand("/tpaview"))
+                .hoverEvent(HoverEvent.showText(
+                        MessageUtil.toComponent(cfg.getMessage("ui.hover.view"))));
+
+        requester.sendMessage(Component.text()
+                .append(msg)
+                .append(Component.text(" "))
+                .append(viewButton)
+                .build());
+        SoundUtil.play(requester, "request-accepted");
+    }
+
+    /** Returns the accepter's UUID for a sender who has an accepted-pending request, or null. */
+    public UUID getAcceptedRequestTarget(UUID requesterId) {
+        AcceptedRequest accepted = acceptedPending.get(requesterId);
+        return accepted != null ? accepted.accepterId() : null;
+    }
+
+    /** Returns the captured destination for a sender who has an accepted-pending request, or null. */
+    public Location getAcceptedDestination(UUID requesterId) {
+        AcceptedRequest accepted = acceptedPending.get(requesterId);
+        return accepted != null ? accepted.destination() : null;
+    }
+
+    /**
+     * Cancels an accepted-but-unconfirmed request (sender chose not to proceed).
+     *
+     * @return true if a pending accepted request was found and removed
+     */
+    public boolean cancelAcceptedRequest(UUID requesterId) {
+        return acceptedPending.remove(requesterId) != null;
     }
 
     public CompletableFuture<Boolean> denyRequest(Player denier, UUID requesterId) {
@@ -426,6 +537,19 @@ public class TeleportRequestManager {
             }
             return false;
         });
+        acceptedPending.entrySet().removeIf(e -> {
+            if (now - e.getValue().acceptTime() > timeoutMs) {
+                UUID requesterId = e.getKey();
+                Player requester = Bukkit.getPlayer(requesterId);
+                if (requester != null) {
+                    MessageUtil.sendMessageWithPlaceholders(requester,
+                            plugin.getConfigManager().getPrefix()
+                            + plugin.getConfigManager().getMessage("requests.confirm-expired"));
+                }
+                return true;
+            }
+            return false;
+        });
         long cooldownMs = plugin.getConfigManager().getCooldown() * 1000L;
         cooldowns.entrySet().removeIf(e -> now - e.getValue() > cooldownMs + COOLDOWN_GRACE_PERIOD_MS);
     }
@@ -444,6 +568,23 @@ public class TeleportRequestManager {
         if (pt != null) {
             pt.cancelSilently();
         }
+
+        acceptedPending.remove(playerId);
+
+        acceptedPending.entrySet().removeIf(e -> {
+            if (e.getValue().accepterId().equals(playerId)) {
+                UUID senderId = e.getKey();
+                Player sender = Bukkit.getPlayer(senderId);
+                if (sender != null) {
+                    MessageUtil.sendMessageWithPlaceholders(sender,
+                            plugin.getConfigManager().getPrefix()
+                            + plugin.getConfigManager().getMessage("requests.confirm-cancelled",
+                                    Map.of("player", player.getName())));
+                }
+                return true;
+            }
+            return false;
+        });
 
         TPARequest sent = activeRequests.remove(playerId);
         if (sent != null) {

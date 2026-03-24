@@ -38,8 +38,9 @@ commands:
   tpa:
     usage: "&cUsage: /tpa <player>"
     cannot-teleport-self: "&cYou cannot send a teleport request to yourself."
-  tpaview:
-    usage: "&cUsage: /tpaview <player>"
+  tpahere:
+    usage: "&cUsage: /tpahere <player>"
+    cannot-teleport-self: "&cYou cannot send a teleport here request to yourself."
 
 # ─────────────────────────────────────────────
 #  TPA request lifecycle
@@ -48,13 +49,22 @@ commands:
 requests:
   sent: "&aYou have sent a teleport request to &e%player%&a."
   received: "&e%player% &ahas requested to teleport to you."
+  here-sent: "&aYou have requested &e%player% &ato teleport to you."
+  here-received: "&e%player% &ahas requested you to teleport to them."
+  here-accepted-requester: "&e%player% &aaccepted your request and is teleporting to you!"
+  here-accepted-target: "&aYou accepted &e%player%&a's request. Teleporting to them..."
   already-has-request: "&cThis player already has a pending teleport request!"
   expired: "&cThe teleport request has expired."
   expired-target: "&cThe teleport request has expired!"
   no-pending-request: "&cYou don't have any pending teleport requests!"
   no-pending-requests: "&cYou have no pending teleport requests."
-  accepted: "&aYour teleport request has been accepted!"
   accepted-target: "&aYou accepted &e%player%&a's teleport request."
+  accepted-awaiting-confirm: "&e%player% &aaccepted your teleport request!"
+  no-accepted-request: "&cYou have no pending teleport confirmation. Ask the target to accept first."
+  confirm-expired: "&cYour teleport confirmation window has expired."
+  confirm-cancelled: "&cTeleport confirmation cancelled — &e%player% &cleft the server."
+  sender-cancelled: "&aYou cancelled the teleport."
+  sender-cancelled-target: "&e%player% &ccancelled the teleport."
   denied: "&cYour teleport request has been denied."
   denied-target: "&cYou denied &e%player%&c's teleport request."
   cancelled: "&aYour teleport request has been cancelled."
@@ -83,6 +93,12 @@ teleport:
 # ─────────────────────────────────────────────
 cooldown:
   message: "&cYou must wait &e%time% &cseconds before sending another request!"
+
+# ─────────────────────────────────────────────
+#  Combat check
+# ─────────────────────────────────────────────
+combat:
+  blocked: "&cYou cannot use teleport commands while you are in combat!"
 
 # ─────────────────────────────────────────────
 #  Toggle commands
@@ -114,9 +130,9 @@ auto:
 # ─────────────────────────────────────────────
 ui:
   button:
-    view: "&e[View Request]"
+    view: "&e[View]"
   hover:
-    view: "&eClick to view the teleport request details"
+    view: "&eClick to view their info and confirm or cancel the teleport"
 
 # ─────────────────────────────────────────────
 #  /tplist output
@@ -153,6 +169,7 @@ rating:
   rate-button: "&e[Rate]"
   click-to-rate-hover: "&eClick to open the rating GUI"
   submitted: "&aYou rated &e%player% &a%stars% star(s). Thank you!"
+  on-cooldown: "&cYou must wait &e%time%s &cbefore rating &e%player% &cagain."
   expired: "&cYour rating session has expired."
 
 # ══════════════════════════════════════════════════════════════
@@ -168,6 +185,7 @@ gui:
   #  Placeholders: %player% (stats and settings titles only)
   titles:
     request: "&6Teleport Request"
+    confirm: "&6Teleport Confirmation"
     stats: "&6Player Info — &e%player%"
     settings: "&6Your TPA Settings"
     rating: "&6Rate your experience"
@@ -203,6 +221,26 @@ gui:
     accept-lore: "&7Click to accept the teleport request"
     deny-name: "&c✘ Deny"
     deny-lore: "&7Click to deny the teleport request"
+
+  # ── Confirm GUI (shown to the TPA sender after target accepts) ──
+  #  Same layout as the Request GUI, but shows the accepter's info.
+  #  Accept TP → teleport fires; Cancel → aborts.
+  #  Placeholders:
+  #    head-name         : %player%
+  #    head-location     : %x%, %y%, %z%
+  #    head-dimension    : %dimension%
+  #    head-trap-percent : %tpa_trap_percent%
+  #    head-rating       : %tpa_rating%
+  confirm:
+    head-name: "&e%player%"
+    head-location: "&7Location: &f%x%, %y%, %z%"
+    head-dimension: "&7Dimension: &f%dimension%"
+    head-trap-percent: "&7Trap %%: &f%tpa_trap_percent%%%"
+    head-rating: "&7Rating: &f%tpa_rating% ⭐"
+    accept-name: "&a✔ Accept TP"
+    accept-lore: "&7Click to confirm and teleport to this player"
+    cancel-name: "&c✘ Cancel"
+    cancel-lore: "&7Click to cancel the teleport"
 
   # ── Stats / Player Info GUI (/tpstats) ───────────────────────
   #  Placeholders:
