@@ -17,8 +17,8 @@ commands:
   tpahere:
     description: Request a player to teleport to you
     usage: /tpahere <player>
-    permission: tpshield.tpa
-    permission-message: "&cYou don't have permission. Required: tpshield.tpa"
+    permission: tpshield.tpahere
+    permission-message: "&cYou don't have permission. Required: tpshield.tpahere"
   tpaccept:
     description: Accept a teleport request
     usage: /tpaccept [player]
@@ -89,6 +89,9 @@ permissions:
   tpshield.tpa:
     description: Send/cancel/list/view/notify/rate teleport requests
     default: true
+  tpshield.tpahere:
+    description: Request another player to teleport to you
+    default: true
   tpshield.tpaccept:
     description: Accept incoming teleport requests
     default: true
@@ -130,6 +133,7 @@ permissions:
     default: op
     children:
       tpshield.tpa: true
+      tpshield.tpahere: true
       tpshield.tpaccept: true
       tpshield.tpdeny: true
       tpshield.toggle: true

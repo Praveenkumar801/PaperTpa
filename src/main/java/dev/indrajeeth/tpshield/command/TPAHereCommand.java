@@ -35,7 +35,7 @@ public class TPAHereCommand extends SimpleCommandHandler {
         }
 
         Player player = (Player) sender;
-        if (!checkPermission(player, "tpshield.tpa")) return true;
+        if (!checkPermission(player, "tpshield.tpahere")) return true;
         if (!checkNotInCombat(player)) return true;
 
         String targetName = args[0];
