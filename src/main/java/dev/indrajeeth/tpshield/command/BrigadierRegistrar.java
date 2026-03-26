@@ -47,8 +47,10 @@ public final class BrigadierRegistrar {
                     .then(Commands.argument("player", StringArgumentType.word())
                         .suggests((ctx, builder) -> {
                             String prefix = builder.getRemaining().toLowerCase();
+                            String senderName = ctx.getSource().getSender() instanceof Player p ? p.getName() : null;
                             Bukkit.getOnlinePlayers().stream()
                                 .map(Player::getName)
+                                .filter(n -> senderName == null || !n.equals(senderName))
                                 .filter(n -> n.toLowerCase().startsWith(prefix))
                                 .forEach(builder::suggest);
                             return builder.buildFuture();
@@ -67,8 +69,10 @@ public final class BrigadierRegistrar {
                     .then(Commands.argument("player", StringArgumentType.word())
                         .suggests((ctx, builder) -> {
                             String prefix = builder.getRemaining().toLowerCase();
+                            String senderName = ctx.getSource().getSender() instanceof Player p ? p.getName() : null;
                             Bukkit.getOnlinePlayers().stream()
                                 .map(Player::getName)
+                                .filter(n -> senderName == null || !n.equals(senderName))
                                 .filter(n -> n.toLowerCase().startsWith(prefix))
                                 .forEach(builder::suggest);
                             return builder.buildFuture();
