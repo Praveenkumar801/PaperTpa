@@ -57,7 +57,7 @@ public class TPStatsCommand extends SimpleCommandHandler {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1 && sender instanceof Player p
                 && p.hasPermission("tpshield.stats.others")) {
-            return getOnlinePlayerNames(sender);
+            return getOnlinePlayerNames(sender, args[0]);
         }
         return List.of();
     }

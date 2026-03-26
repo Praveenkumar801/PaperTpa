@@ -69,5 +69,12 @@ public class SimpleCommandHandler implements CommandExecutor, TabCompleter {
                 .map(Player::getName)
                 .collect(java.util.stream.Collectors.toList());
     }
+
+    protected List<String> getOnlinePlayerNames(CommandSender sender, String prefix) {
+        String lower = prefix.toLowerCase();
+        return getOnlinePlayerNames(sender).stream()
+                .filter(n -> n.toLowerCase().startsWith(lower))
+                .collect(java.util.stream.Collectors.toList());
+    }
 }
 

@@ -95,7 +95,7 @@ public class TPAHereCommand extends SimpleCommandHandler {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return getOnlinePlayerNames(sender);
+            return getOnlinePlayerNames(sender, args[0]);
         }
         return null;
     }
